@@ -1,5 +1,4 @@
-use soroban_sdk::{Address, String, Env};
-use crate::schema::UserProfile;
+use soroban_sdk::{Address, String, Env, testutils::Address as _};
 use crate::UserManagement;
 
 #[test]
