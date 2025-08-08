@@ -31,4 +31,24 @@ impl UserManagement {
             user,
         )
     }
+    
+    pub fn update_profile(
+        env: Env,
+        caller: Address,
+        name: Option<String>,
+        email: Option<String>,
+        profession: Option<String>,
+        goals: Option<String>,
+        country: Option<String>,
+    ) -> UserProfile {
+        functions::update_user_profile::user_management_update_profile(
+            env,
+            caller,
+            name,
+            email,
+            profession,
+            goals,
+            country,
+        )
+    }
 } 
