@@ -44,7 +44,7 @@ pub fn user_management_save_profile(
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{Address, String, Env};
+    use soroban_sdk::{Address, String, Env, testutils::Address as _};
     use crate::schema::{UserProfile, DataKey};
     use crate::UserManagement;
     
