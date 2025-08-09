@@ -76,4 +76,7 @@ impl CourseRegistry {
         functions::is_course_creator::is_course_creator(env, course_id, user)
     }
 
+    pub fn list_categories(env: Env) -> Vec<crate::schema::Category> {
+        functions::list_categories::course_registry_list_categories(&env)
+    }
 }
