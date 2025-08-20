@@ -2,7 +2,7 @@ pub use crate::schema::{Course, CourseModule};
 use soroban_sdk::{Bytes, Env, String, Vec, log, vec};
 
 pub fn generate_unique_id(env: &Env) -> String {
-    let ts = env.ledger().timestamp();
+    let ts: u64 = env.ledger().timestamp();
     let rand1: u64 = env.prng().gen();
     let rand2: u64 = env.prng().gen();
 
@@ -157,7 +157,7 @@ pub fn concat_strings(env: &Env, strings: Vec<String>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::{Course, CourseModule};
+    use crate::schema::{Course};
     use crate::CourseRegistry;
     use soroban_sdk::{testutils::Address as _, Address, Env, log, vec};
 
@@ -174,16 +174,17 @@ mod tests {
             published: false,
             prerequisites: Vec::new(&env),
             is_archived: false,
-
+            duration_hours: Some(1),
+            level: Some(String::from_str(env, "entry"))
         }
     }
 
     #[test]
     fn test_delete_course_success() {
         let env = Env::default();
-        let contract_id = env.register(CourseRegistry, {});
+        let _contract_id = env.register(CourseRegistry, {});
         let course_id = String::from_str(&env, "course_1");
-        let course = create_test_course(&env, "course_1.");
+        let _course = create_test_course(&env, "course_1.");
         let course_id2 = String::from_str(&env, "    course_1.  ");
 
 
