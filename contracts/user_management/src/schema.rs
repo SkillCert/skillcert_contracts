@@ -1,55 +1,72 @@
-use soroban_sdk::{Address, String, contracttype, IntoVal, TryFromVal, Val, Env};
+use soroban_sdk::{contracttype, Address, String, Vec};
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct UserProfile {
     pub name: String,
+    pub lastname: String,
     pub email: String,
-    pub profession: Option<String>,
-    pub goals: Option<String>,
-    pub country: String,
+    pub password: String,
+    pub confirm_password: String,
+    pub specialization: String,
+    pub languages: Vec<String>,
+    pub teaching_categories: Vec<String>,
     pub user: Address,
 }
 
-impl IntoVal<Env, Val> for UserProfile {
-    fn into_val(&self, env: &Env) -> Val {
-        (
-            self.name.clone(),
-            self.email.clone(),
-            self.profession.clone(),
-            self.goals.clone(),
-            self.country.clone(),
-            self.user.clone(),
-        )
-            .into_val(env)
-    }
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub enum UserRole {
+    Student,
+    Instructor,
+    Admin,
 }
 
-impl TryFromVal<Env, Val> for UserProfile {
-    type Error = soroban_sdk::ConversionError;
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub enum UserStatus {
+    Active,
+    Inactive,
+    Suspended,
+}
 
-    fn try_from_val(env: &Env, val: &Val) -> Result<Self, Self::Error> {
-        let (name, email, profession, goals, country, user): (
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-            Address,
-        ) = TryFromVal::try_from_val(env, val)?;
-        Ok(UserProfile {
-            name,
-            email,
-            profession,
-            goals,
-            country,
-            user,
-        })
-    }
+#[derive(Clone, Debug, PartialEq)]
+pub struct UserFilter {
+    pub role: Option<UserRole>,
+    pub country: Option<String>,
+    pub status: Option<UserStatus>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct LightProfile {
+    pub name: String,
+    pub lastname: String,
+    pub specialization: String,
+    pub languages: Vec<String>,
+    pub teaching_categories: Vec<String>,
+    pub role: UserRole,
+    pub status: UserStatus,
+    pub user_address: Address,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdminConfig {
+    pub initialized: bool,
+    pub super_admin: Address,
+    pub max_page_size: u32,
+    pub total_user_count: u32,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataKey {
     UserProfile(Address), // This represents the ("user_profile", user_address) key
-} 
+    Admin(Address),       // Admin flag per address
+    UserProfileLight(Address), // Lightweight profile storage
+    UsersIndex,           // List of all registered user addresses
+    Admins,               // List of admin addresses
+    UserRoles,            // Role assignments
+    AdminConfig,          // System configuration
+}

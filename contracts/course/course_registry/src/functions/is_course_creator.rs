@@ -37,6 +37,8 @@ mod test {
             &Some(String::from_str(&env, "category")),
             &Some(String::from_str(&env, "language")),
             &Some(String::from_str(&env, "thumbnail_url")),
+            &None,
+            &None,
         );
 
         let is_creator = client.is_course_creator(&course.id, &creator);
@@ -63,9 +65,11 @@ mod test {
             &Some(String::from_str(&env, "category")),
             &Some(String::from_str(&env, "language")),
             &Some(String::from_str(&env, "thumbnail_url")),
+            &None,
+            &None,
         );
 
-        let is_creator = client.is_course_creator(&course.id.clone(), &Address::generate(&env));
+        let is_creator = client.is_course_creator(&course.id, &impostor);
 
         assert!(!is_creator);
     }
