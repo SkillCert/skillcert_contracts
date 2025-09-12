@@ -3,7 +3,6 @@
 
 use crate::schema::{AdminConfig, DataKey};
 use crate::error::{Error, handle_error};
-use core::iter::Iterator;
 use soroban_sdk::{Address, Env, Vec};
 
 /// Initialize the admin system - can only be called once

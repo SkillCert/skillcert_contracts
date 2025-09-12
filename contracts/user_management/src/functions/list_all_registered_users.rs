@@ -3,7 +3,6 @@
 
 use crate::schema::{AdminConfig, DataKey, LightProfile, UserRole, UserStatus};
 use crate::error::{Error, handle_error};
-use core::iter::Iterator;
 use soroban_sdk::{Address, Env, String, Vec};
 
 /// Security constants
