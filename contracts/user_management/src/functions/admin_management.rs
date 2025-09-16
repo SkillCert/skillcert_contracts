@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::schema::{AdminConfig, DataKey};
-use crate::error::{Error, handle_error};
+use crate::error::{handle_error, Error};
+use crate::schema::{AdminConfig, DataKey, ABSOLUTE_MAX_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE, MAX_ADMINS};
 use core::iter::Iterator;
 use soroban_sdk::{Address, Env, Vec};
 
@@ -29,12 +29,13 @@ pub fn initialize_system(
     // Validate max_page_size
     let validated_max_page_size = match max_page_size {
         Some(size) => {
-            if size == 0 || size > 1000 {
+            if size == 0 || size > ABSOLUTE_MAX_PAGE_SIZE {
                 handle_error(&env, Error::InvalidMaxPageSize)
             }
             size
         }
-        None => 100, // Default
+        // TODO: Make page size configurable through contract configuration
+        None => DEFAULT_MAX_PAGE_SIZE, // Default
     };
 
     let config = AdminConfig {
@@ -66,7 +67,7 @@ pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
-        .unwrap_or_else(||handle_error(&env, Error::SystemNotInitialized));
+        .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized));
 
     if !config.initialized {
         handle_error(&env, Error::SystemNotInitialized)
@@ -94,7 +95,7 @@ pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
     }
 
     // Limit number of admins for security
-    if admins.len() >= 10 {
+    if admins.len() >= MAX_ADMINS {
         handle_error(&env, Error::MaxAdminsReached)
     }
 
@@ -123,7 +124,7 @@ pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
 
     // Cannot remove super admin
     if admin_to_remove == config.super_admin {
-         handle_error(&env, Error::CannotRemoveSuperAdmin)
+        handle_error(&env, Error::CannotRemoveSuperAdmin)
     }
 
     let admins: Vec<Address> = env
@@ -190,7 +191,7 @@ pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
 }
 
 /// Check if system is initialized
-pub fn is_initialized(env: Env) -> bool {
+pub fn is_system_initialized(env: Env) -> bool {
     if let Some(config) = env
         .storage()
         .persistent()
@@ -218,11 +219,12 @@ mod tests {
         let initializer = Address::generate(&env);
         let super_admin = Address::generate(&env);
 
-        let config = client.initialize_system(&initializer, &super_admin, &Some(50));
+        const TEST_MAX_PAGE_SIZE: u32 = 50;
+        let config = client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
 
         assert!(config.initialized);
         assert_eq!(config.super_admin, super_admin);
-        assert_eq!(config.max_page_size, 50);
+        assert_eq!(config.max_page_size, TEST_MAX_PAGE_SIZE);
         assert_eq!(config.total_user_count, 0);
 
         assert!(client.is_system_initialized());
@@ -239,8 +241,9 @@ mod tests {
         let initializer = Address::generate(&env);
         let super_admin = Address::generate(&env);
 
-        client.initialize_system(&initializer, &super_admin, &Some(50));
-        client.initialize_system(&initializer, &super_admin, &Some(50));
+        const TEST_MAX_PAGE_SIZE: u32 = 50;
+        client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
+        client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
     }
 
     #[test]

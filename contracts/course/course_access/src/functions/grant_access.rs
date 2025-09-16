@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::schema::{CourseAccess, DataKey, UserCourses, CourseUsers};
+use crate::error::{handle_error, Error};
+use crate::functions::config::{TTL_BUMP, TTL_TTL};
+use crate::schema::{CourseAccess, CourseUsers, DataKey, UserCourses};
 use soroban_sdk::{Address, Env, String, Vec};
-use crate::error::{Error, handle_error};
 
 /// Grant access to a specific user for a given course.
 ///
@@ -21,6 +22,7 @@ use crate::error::{Error, handle_error};
 ///
 /// Panics with `Error::UserAlreadyHasAccess` if the user already has access to the course.
 pub fn grant_access(env: Env, course_id: String, user: Address) {
+  validate-input-params
     // Input validation
     if course_id.is_empty() {
         handle_error(&env, Error::InvalidInput)
@@ -31,6 +33,8 @@ pub fn grant_access(env: Env, course_id: String, user: Address) {
     //     handle_error(&env, Error::InvalidInput);
     // }
 
+=======
+  main
     let key: DataKey = DataKey::CourseAccess(course_id.clone(), user.clone());
 
     // Check if access already exists to prevent duplicates

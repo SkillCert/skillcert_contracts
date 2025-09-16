@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use soroban_sdk::{Env, Address, Symbol};
+use soroban_sdk::{Address, Env, Symbol};
 
 use crate::schema::UserProfile;
 
+ validate-input-params
 /// Get user profile by address (public function)
 pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
     // Input validation
@@ -14,18 +15,29 @@ pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
     //     handle_error(env, Error::InvalidInput);
     // }
     let key = Symbol::new(env, "profile");
+
+pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
+    // Create the storage key for the user profile
+    let key = Symbol::new(env, "profile");
+
+    // Get the user profile from storage
+ main
     let profile: UserProfile = env
         .storage()
         .instance()
         .get(&(key, user_address.clone()))
         .expect("User profile not found");
+validate-input-params
+
+ main
     profile
 }
 
 // Function to get user profile with privacy check
-// Returns profile only if it's public or if the requester is the profile owner
+// Returns profile only if it's public or if the requester is the profile owner validate-input-params
 /// Get user profile with privacy check
 /// Returns profile only if it's public or if the requester is the profile owner
+ main
 pub fn get_user_profile_with_privacy(
     env: &Env,
     user_address: Address,
@@ -38,12 +50,28 @@ pub fn get_user_profile_with_privacy(
     //     handle_error(env, Error::InvalidInput);
     // }
     let key = Symbol::new(env, "profile");
+ validate-input-params
+
+
+    // TODO: Implement caching mechanism for frequently accessed profiles
+
+    // Get the user profile from storage
+ main
     let mut profile: UserProfile = env
         .storage()
         .instance()
         .get(&(key, user_address.clone()))
         .expect("User profile not found");
+ validate-input-params
     if !profile.privacy_public && requester_address != user_address {
         profile.email = None;
     }
+
+
+    // Check privacy settings
+    // If profile is not public and requester is not the profile owner, hide email
+    if !profile.privacy_public && requester_address != user_address {
+        profile.email = None;
+    }
+ main
     profile
