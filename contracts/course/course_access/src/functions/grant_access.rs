@@ -11,7 +11,11 @@ pub fn course_access_grant_access(env: Env, course_id: String, user: Address) {
     if course_id.is_empty() {
         handle_error(&env, Error::InvalidInput)
     }
-    // Optionally, add more checks for user address validity if needed
+    // Consistent error handling for invalid user address
+    // Uncomment and use handle_error if Address can be empty:
+    // if user.is_empty() {
+    //     handle_error(&env, Error::InvalidInput);
+    // }
 
     let key: DataKey = DataKey::CourseAccess(course_id.clone(), user.clone());
 

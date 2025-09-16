@@ -9,8 +9,12 @@ pub fn user_profile_get_user_profile(env: &Env, user_address: Address) -> UserPr
     // Input validation
     // If Address type supports is_empty or similar, add check. Otherwise, skip.
     // For demonstration, assume Address cannot be empty.
+    // Consistent error handling for invalid input
+    // Uncomment and use handle_error if Address can be empty:
+    // if user_address.is_empty() {
+    //     handle_error(env, Error::InvalidInput);
+    // }
     let key = Symbol::new(env, "profile");
-    // Get the user profile from storage
     let profile: UserProfile = env
         .storage()
         .instance()
@@ -28,18 +32,19 @@ pub fn user_profile_get_user_profile_with_privacy(
 ) -> UserProfile {
     // Input validation
     // If Address type supports is_empty or similar, add check. Otherwise, skip.
+    // Consistent error handling for invalid input
+    // Uncomment and use handle_error if Address can be empty:
+    // if user_address.is_empty() {
+    //     handle_error(env, Error::InvalidInput);
+    // }
     let key = Symbol::new(env, "profile");
-    // Get the user profile from storage
     let mut profile: UserProfile = env
         .storage()
         .instance()
         .get(&(key, user_address.clone()))
         .expect("User profile not found");
-    // Check privacy settings
-    // If profile is not public and requester is not the profile owner, hide email
     if !profile.privacy_public && requester_address != user_address {
         profile.email = None;
     }
-    
     profile
 }
