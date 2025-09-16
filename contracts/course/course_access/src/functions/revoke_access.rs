@@ -19,8 +19,23 @@ use crate::schema::{DataKey, UserCourses, CourseUsers};
 //     }
 // }
 
-/// Revoke access for a specific user from a course
-pub fn course_access_revoke_access(env: Env, course_id: String, user: Address) -> bool {
+/// Revoke access for a specific user from a course.
+///
+/// This function removes a user's access to a specific course and updates
+/// both the user's course list and the course's user list to maintain
+/// data consistency across all storage structures.
+///
+/// # Arguments
+///
+/// * `env` - The Soroban environment
+/// * `course_id` - The unique identifier of the course to revoke access from
+/// * `user` - The address of the user to revoke access from
+///
+/// # Returns
+///
+/// Returns `true` if access was successfully revoked, `false` if the user
+/// didn't have access to the course in the first place.
+pub fn revoke_access(env: Env, course_id: String, user: Address) -> bool {
     // Input validation
     if course_id.is_empty() {
         return false;

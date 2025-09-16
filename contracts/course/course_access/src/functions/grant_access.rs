@@ -5,8 +5,22 @@ use crate::schema::{CourseAccess, DataKey, UserCourses, CourseUsers};
 use soroban_sdk::{Address, Env, String, Vec};
 use crate::error::{Error, handle_error};
 
-/// Grant access to a specific user for a given course
-pub fn course_access_grant_access(env: Env, course_id: String, user: Address) {
+/// Grant access to a specific user for a given course.
+///
+/// This function creates a new course access entry for the specified user and course.
+/// It also updates the user's course list and the course's user list to maintain
+/// bidirectional relationships for efficient querying.
+///
+/// # Arguments
+///
+/// * `env` - The Soroban environment
+/// * `course_id` - The unique identifier of the course to grant access to
+/// * `user` - The address of the user to grant access to
+///
+/// # Panics
+///
+/// Panics with `Error::UserAlreadyHasAccess` if the user already has access to the course.
+pub fn grant_access(env: Env, course_id: String, user: Address) {
     // Input validation
     if course_id.is_empty() {
         handle_error(&env, Error::InvalidInput)
@@ -32,7 +46,9 @@ pub fn course_access_grant_access(env: Env, course_id: String, user: Address) {
 
     // Store the access entry
     env.storage().persistent().set(&key, &course_access);
-    env.storage().persistent().extend_ttl(&key, 100, 1000);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_BUMP, TTL_TTL);
 
     // Update UserCourses
     let user_courses_key = DataKey::UserCourses(user.clone());
@@ -46,8 +62,12 @@ pub fn course_access_grant_access(env: Env, course_id: String, user: Address) {
         });
     if !user_courses.courses.contains(&course_id) {
         user_courses.courses.push_back(course_id.clone());
-        env.storage().persistent().set(&user_courses_key, &user_courses);
-        env.storage().persistent().extend_ttl(&user_courses_key, 100, 1000);
+        env.storage()
+            .persistent()
+            .set(&user_courses_key, &user_courses);
+        env.storage()
+            .persistent()
+            .extend_ttl(&user_courses_key, TTL_BUMP, TTL_TTL);
     }
 
     // Update CourseUsers
@@ -62,7 +82,11 @@ pub fn course_access_grant_access(env: Env, course_id: String, user: Address) {
         });
     if !course_users.users.contains(&user) {
         course_users.users.push_back(user.clone());
-        env.storage().persistent().set(&course_users_key, &course_users);
-        env.storage().persistent().extend_ttl(&course_users_key, 100, 1000);
+        env.storage()
+            .persistent()
+            .set(&course_users_key, &course_users);
+        env.storage()
+            .persistent()
+            .extend_ttl(&course_users_key, TTL_BUMP, TTL_TTL);
     }
 }

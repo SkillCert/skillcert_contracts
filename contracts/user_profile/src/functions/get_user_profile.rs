@@ -5,11 +5,10 @@ use soroban_sdk::{Env, Address, Symbol};
 
 use crate::schema::UserProfile;
 
-pub fn user_profile_get_user_profile(env: &Env, user_address: Address) -> UserProfile {
+/// Get user profile by address (public function)
+pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
     // Input validation
     // If Address type supports is_empty or similar, add check. Otherwise, skip.
-    // For demonstration, assume Address cannot be empty.
-    // Consistent error handling for invalid input
     // Uncomment and use handle_error if Address can be empty:
     // if user_address.is_empty() {
     //     handle_error(env, Error::InvalidInput);
@@ -25,14 +24,15 @@ pub fn user_profile_get_user_profile(env: &Env, user_address: Address) -> UserPr
 
 // Function to get user profile with privacy check
 // Returns profile only if it's public or if the requester is the profile owner
-pub fn user_profile_get_user_profile_with_privacy(
-    env: &Env, 
-    user_address: Address, 
-    requester_address: Address
+/// Get user profile with privacy check
+/// Returns profile only if it's public or if the requester is the profile owner
+pub fn get_user_profile_with_privacy(
+    env: &Env,
+    user_address: Address,
+    requester_address: Address,
 ) -> UserProfile {
     // Input validation
     // If Address type supports is_empty or similar, add check. Otherwise, skip.
-    // Consistent error handling for invalid input
     // Uncomment and use handle_error if Address can be empty:
     // if user_address.is_empty() {
     //     handle_error(env, Error::InvalidInput);
@@ -47,4 +47,3 @@ pub fn user_profile_get_user_profile_with_privacy(
         profile.email = None;
     }
     profile
-}
