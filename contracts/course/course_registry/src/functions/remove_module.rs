@@ -5,7 +5,8 @@ use crate::error::{handle_error, Error};
 use crate::schema::CourseModule;
 use soroban_sdk::{symbol_short, Env, String};
 
-pub fn remove_module(env: &Env, module_id: String) -> Result<(), &'static str> {
+pub fn remove_module(env: &Env, creator: Address, module_id: String) -> Result<(), &'static str> {
+    // Get the module to check course ID for permission verification
     if module_id.len() == 0 {
         handle_error(&env, Error::EmptyModuleId)
     }
@@ -16,10 +17,11 @@ pub fn remove_module(env: &Env, module_id: String) -> Result<(), &'static str> {
         .persistent()
         .get(&(symbol_short!("module"), module_id.clone()));
 
-    // Validate that the module exists and is a valid CourseModule
-    if module.is_none() {
-        handle_error(&env, Error::ModuleNotFound)
-    }
+    // Get and validate module
+    let module = module.unwrap_or_else(|| handle_error(env, Error::ModuleNotFound));
+    
+    // Check permissions using the module's course_id
+    super::access_control::require_course_creator_or_admin(env, &creator, &module.course_id);
 
     // Delete the CourseModule directly from persistent storage using its key.
     env.storage()

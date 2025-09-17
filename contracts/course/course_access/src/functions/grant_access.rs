@@ -15,13 +15,18 @@ use soroban_sdk::{Address, Env, String, Vec};
 /// # Arguments
 ///
 /// * `env` - The Soroban environment
+/// * `caller` - The address of the account executing this function
 /// * `course_id` - The unique identifier of the course to grant access to
 /// * `user` - The address of the user to grant access to
 ///
 /// # Panics
 ///
-/// Panics with `Error::UserAlreadyHasAccess` if the user already has access to the course.
-pub fn grant_access(env: Env, course_id: String, user: Address) {
+/// Panics with:
+/// * `Error::UserAlreadyHasAccess` if the user already has access to the course.
+/// * `Error::Unauthorized` if the caller isn't the course creator or an admin.
+pub fn grant_access(env: Env, caller: Address, course_id: String, user: Address) {
+    // Check if caller has management rights
+    super::access_control::require_management_rights(&env, &caller, &course_id);
     let key: DataKey = DataKey::CourseAccess(course_id.clone(), user.clone());
 
     // Check if access already exists to prevent duplicates

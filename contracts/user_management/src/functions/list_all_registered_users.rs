@@ -34,20 +34,14 @@ pub fn list_all_users(
     country_filter: Option<String>,
     status_filter: Option<UserStatus>,
 ) -> Vec<LightProfile> {
-    // Require the caller to be authenticated
-    caller.require_auth();
-
-    // Check system initialization first
-    if !is_system_initialized(&env) {
-        handle_error(&env, Error::SystemNotInitialized)
-    }
-
-    // Get admin configuration
+    // Verify caller has admin privileges
+    super::access_control::require_admin(&env, &caller);
+    
+    // Verify system is initialized
+    super::access_control::require_initialized(&env);
+    
+    // Get admin configuration for page size limits
     let config = get_admin_config(&env);
-
-    // Authorization: only admins can call
-    if !is_admin(&env, &caller) {
-        handle_error(&env, Error::AccessDenied)
     }
 
     // Validate and sanitize input parameters

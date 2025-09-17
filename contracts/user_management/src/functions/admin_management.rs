@@ -61,22 +61,15 @@ pub fn initialize_system(
 
 /// Add a new admin (super admin only)
 pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
-    caller.require_auth();
-
+    // Verify super admin privileges and system initialization
+    super::access_control::require_super_admin(&env, &caller);
+    super::access_control::require_initialized(&env);
+    
     let config = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
         .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized));
-
-    if !config.initialized {
-        handle_error(&env, Error::SystemNotInitialized)
-    }
-
-    // Only super admin can add admins
-    if caller != config.super_admin {
-        handle_error(&env, Error::AccessDenied)
-    }
 
     // Prevent adding super admin to regular admin list
     if new_admin == config.super_admin {
@@ -105,22 +98,15 @@ pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
 
 /// Remove an admin (super admin only)
 pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
-    caller.require_auth();
-
+    // Verify super admin privileges and system initialization
+    super::access_control::require_super_admin(&env, &caller);
+    super::access_control::require_initialized(&env);
+    
     let config = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
         .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized));
-
-    if !config.initialized {
-        handle_error(&env, Error::SystemNotInitialized)
-    }
-
-    // Only super admin can remove admins
-    if caller != config.super_admin {
-        handle_error(&env, Error::AccessDenied)
-    }
 
     // Cannot remove super admin
     if admin_to_remove == config.super_admin {
@@ -154,30 +140,22 @@ pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
 
 /// Get list of all admins (admin only)
 pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
-    caller.require_auth();
-
+    // Verify admin privileges and system initialization
+    super::access_control::require_admin(&env, &caller);
+    super::access_control::require_initialized(&env);
+    
     let config = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
         .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized));
-
-    if !config.initialized {
-        handle_error(&env, Error::SystemNotInitialized);
-    }
-
-    // Check if caller is an admin (including super admin)
-    let is_super_admin = caller == config.super_admin;
+        
+    // Get regular admins
     let regular_admins: Vec<Address> = env
         .storage()
         .persistent()
         .get::<DataKey, Vec<Address>>(&DataKey::Admins)
         .unwrap_or_else(|| Vec::new(&env));
-    let is_regular_admin = regular_admins.iter().any(|a| a == caller);
-
-    if !is_super_admin && !is_regular_admin {
-        handle_error(&env, Error::AccessDenied)
-    }
 
     // Return all admins including super admin
     let mut all_admins = Vec::new(&env);

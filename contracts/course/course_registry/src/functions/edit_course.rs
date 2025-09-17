@@ -27,10 +27,8 @@ pub fn edit_course(
         .get(&storage_key)
         .expect("Course error: Course not found");
 
-    // --- Permission: only creator can edit ---
-    if creator != course.creator {
-        handle_error(&env, Error::Unauthorized)
-    }
+    // Use our access control utilities to check permissions
+    super::access_control::require_course_creator_or_admin(&env, &creator, &course_id);
 
     // --- Title update (validate + uniqueness) ---
 

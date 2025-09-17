@@ -14,6 +14,7 @@ use crate::functions::config::{TTL_BUMP, TTL_TTL};
 /// # Arguments
 ///
 /// * `env` - The Soroban environment
+/// * `caller` - The address of the account executing this function
 /// * `course_id` - The unique identifier of the course to revoke access from
 /// * `user` - The address of the user to revoke access from
 ///
@@ -21,7 +22,13 @@ use crate::functions::config::{TTL_BUMP, TTL_TTL};
 ///
 /// Returns `true` if access was successfully revoked, `false` if the user
 /// didn't have access to the course in the first place.
-pub fn revoke_access(env: Env, course_id: String, user: Address) -> bool {
+///
+/// # Panics
+///
+/// Panics with `Error::Unauthorized` if the caller isn't the course creator or an admin.
+pub fn revoke_access(env: Env, caller: Address, course_id: String, user: Address) -> bool {
+    // Check if caller has management rights
+    super::access_control::require_management_rights(&env, &caller, &course_id);
     let key: DataKey = DataKey::CourseAccess(course_id.clone(), user.clone());
 
     // Check if the CourseAccess entry exists in persistent storage

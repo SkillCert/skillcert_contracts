@@ -17,6 +17,7 @@ const COURSE_TRANSFER_EVENT: Symbol = symbol_short!("transfer");
 /// # Arguments
 ///
 /// * `env` - The Soroban environment
+/// * `caller` - The address of the account executing this function
 /// * `course_id` - The unique identifier of the course to transfer access for
 /// * `from` - The address of the user currently having access
 /// * `to` - The address of the user to transfer access to
@@ -27,8 +28,19 @@ const COURSE_TRANSFER_EVENT: Symbol = symbol_short!("transfer");
 ///
 /// # Panics
 ///
-/// Panics with `Error::UserNoAccessCourse` if the source user doesn't have access to the course.
-pub fn transfer_course_access(env: Env, course_id: String, from: Address, to: Address) {
+/// Panics with:
+/// * `Error::UserNoAccessCourse` if the source user doesn't have access to the course
+/// * `Error::Unauthorized` if the caller isn't the course creator, an admin, or the from address
+pub fn transfer_course_access(env: Env, caller: Address, course_id: String, from: Address, to: Address) {
+    // Require caller authentication
+    caller.require_auth();
+
+    // Check if caller has permission (is admin, course creator, or the from address)
+    if !super::access_control::is_admin(&env, &caller) && 
+       !super::access_control::is_course_creator(&env, &course_id, &caller) && 
+       caller != from {
+        handle_error(&env, Error::Unauthorized);
+    }
     // Create the storage key for this course and current  user combination
     let key: DataKey = DataKey::CourseAccess(course_id.clone(), from.clone());
 

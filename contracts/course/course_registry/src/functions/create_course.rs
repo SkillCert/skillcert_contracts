@@ -22,7 +22,11 @@ pub fn create_course(
     level: Option<CourseLevel>,
     duration_hours: Option<u32>,
 ) -> Course {
+    // Basic authentication
     creator.require_auth();
+    
+    // Optional: We could add admin-only restrictions here if we want to limit who can create courses
+    // For now, we'll allow any authenticated user to create courses
 
     // ensure the title is not empty and not just whitespace
     let trimmed_title = trim(&env, &title);

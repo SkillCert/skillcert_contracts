@@ -29,9 +29,8 @@ pub fn delete_course(env: &Env, creator: Address, course_id: String) -> Result<(
         .get(&course_storage_key)
         .ok_or("Course not found")?;
 
-    if course.creator != creator {
-        handle_error(&env, Error::Unauthorized)
-    }
+    // Use our access control utilities to check permissions
+    super::access_control::require_course_creator_or_admin(&env, &creator, &course_id);
 
     delete_course_modules(env, &course_id);
 

@@ -5,7 +5,10 @@ use soroban_sdk::{Address, Env, Symbol};
 
 use crate::schema::UserProfile;
 
-pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
+pub fn get_user_profile(env: &Env, requester: Address, user_address: Address) -> UserProfile {
+    // Check access rights
+    super::access_control::require_profile_access(env, &requester, &user_address);
+
     // Create the storage key for the user profile
     let key = Symbol::new(env, "profile");
 

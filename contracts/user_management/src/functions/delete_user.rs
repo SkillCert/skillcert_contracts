@@ -28,20 +28,12 @@ const EVT_USER_DEACTIVATED: Symbol = symbol_short!("usr_deact");
 /// # Events
 /// Emits a user deactivation event upon successful deletion
 pub fn delete_user(env: Env, caller: Address, user_id: Address) -> () {
-    // Require authentication for the caller
-    caller.require_auth();
-
-    // DEPENDENCY: Validate that user exists (using user existence validation)
+    // Verify user management authorization
+    super::access_control::require_user_management_auth(&env, &caller, &user_id);
+    
+    // DEPENDENCY: Validate that user exists
     let _user_profile = validate_user_exists(&env, &user_id)
         .unwrap_or_else(|_| handle_error(&env, Error::UserNotFound));
-
-    // Authorization: only admin or the user themselves can trigger deletion
-    let is_caller_admin = is_admin(&env, &caller);
-    let is_self_deletion = caller == user_id;
-
-    if !is_caller_admin && !is_self_deletion {
-        handle_error(&env, Error::AccessDenied)
-    }
 
     // Check current user status from light profile
     let light_profile_key = DataKey::UserProfileLight(user_id.clone());

@@ -18,9 +18,8 @@ pub fn archive_course(env: &Env, creator: Address, course_id: String) -> Course 
         .get(&key)
         .expect("Course not found");
 
-    if course.creator != creator {
-        handle_error(&env, Error::OnlyCreatorCanArchive)
-    }
+    // Use our access control utilities to check permissions
+    super::access_control::require_course_creator_or_admin(env, &creator, &course_id);
 
     if course.is_archived {
         handle_error(&env, Error::CourseAlreadyArchived)

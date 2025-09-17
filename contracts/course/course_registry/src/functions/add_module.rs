@@ -9,7 +9,10 @@ use soroban_sdk::{symbol_short, vec, Env, String, Symbol};
 const COURSE_KEY: Symbol = symbol_short!("course");
 const MODULE_KEY: Symbol = symbol_short!("module");
 
-pub fn add_module(env: Env, course_id: String, position: u32, title: String) -> CourseModule {
+pub fn add_module(env: Env, creator: Address, course_id: String, position: u32, title: String) -> CourseModule {
+    // Check permissions
+    super::access_control::require_course_creator_or_admin(&env, &creator, &course_id);
+    
     // Verify course exists
     let course_storage_key: (Symbol, String) = (COURSE_KEY, course_id.clone());
 
