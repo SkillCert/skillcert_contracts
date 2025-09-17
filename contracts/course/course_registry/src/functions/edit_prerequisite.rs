@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use crate::error::{handle_error, Error};
 use crate::schema::{Course, DataKey};
-use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, Map, String, Symbol, Vec};
 
 const PREREQ_UPDATED_EVENT: Symbol = symbol_short!("preqedit");
 
-pub fn course_registry_edit_prerequisite(
+pub fn edit_prerequisite(
     env: Env,
     creator: Address,
     course_id: String,
@@ -26,7 +26,6 @@ pub fn course_registry_edit_prerequisite(
     // Authorization: only creator can edit prerequisites
     if course.creator != creator {
         handle_error(&env, Error::Unauthorized)
-
     }
 
     // Validate that all prerequisite courses exist
@@ -34,10 +33,10 @@ pub fn course_registry_edit_prerequisite(
         let prereq_course_key = (symbol_short!("course"), prerequisite_id.clone());
         if !env.storage().persistent().has(&prereq_course_key) {
             handle_error(&env, Error::PrereqCourseNotFound)
-
         }
     }
 
+    // TODO: Implement advanced prerequisite validation (depth limits, cyclic dependencies)
     // Prevent circular dependencies
     validate_no_circular_dependency(&env, &course_id, &new_prerequisites);
 
@@ -147,7 +146,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 1"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -158,7 +157,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 2"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -169,7 +168,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 3"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -211,7 +210,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 1"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -222,7 +221,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 2"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -233,7 +232,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 3"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -244,7 +243,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 4"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -255,7 +254,6 @@ mod tests {
         let mut initial_prerequisites = Vec::new(&env);
         initial_prerequisites.push_back(course2.id.clone());
         client.edit_prerequisite(&creator, &course1.id, &initial_prerequisites);
-
 
         let mut new_prerequisites = Vec::new(&env);
         new_prerequisites.push_back(course3.id.clone());
@@ -279,7 +277,6 @@ mod tests {
         let env = Env::default();
         env.mock_all_auths();
 
-
         let contract_id = env.register(CourseRegistry, ());
         let client = CourseRegistryClient::new(&env, &contract_id);
 
@@ -288,7 +285,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 1"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -299,7 +296,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 2"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -310,7 +307,6 @@ mod tests {
         let mut initial_prerequisites = Vec::new(&env);
         initial_prerequisites.push_back(course2.id.clone());
         client.edit_prerequisite(&creator, &course1.id, &initial_prerequisites);
-
 
         let empty_prerequisites = Vec::new(&env);
         client.edit_prerequisite(&creator, &course1.id.clone(), &empty_prerequisites);
@@ -334,7 +330,6 @@ mod tests {
         let contract_id = env.register(CourseRegistry, ());
         let client = CourseRegistryClient::new(&env, &contract_id);
 
-
         client.edit_prerequisite(
             &Address::generate(&env),
             &String::from_str(&env, "404"),
@@ -356,7 +351,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 1"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -423,7 +418,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 2"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -434,7 +429,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 3"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -493,7 +488,6 @@ mod tests {
 
         client.edit_prerequisite(&creator, &course1.id, &prerequisites);
 
-
         let stored_prerequisites: Vec<String> = env.as_contract(&contract_id, || {
             env.storage()
                 .persistent()
@@ -549,7 +543,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 4"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -560,7 +554,7 @@ mod tests {
             &creator,
             &String::from_str(&env, "Course 5"),
             &String::from_str(&env, "description"),
-            &1000,
+            &crate::schema::DEFAULT_COURSE_PRICE,
             &None,
             &None,
             &None,
@@ -571,7 +565,6 @@ mod tests {
         let mut prerequisites2 = Vec::new(&env);
         prerequisites2.push_back(course4.id.clone());
         client.edit_prerequisite(&creator, &course2.id, &prerequisites2);
-
 
         let mut prerequisites3 = Vec::new(&env);
         prerequisites3.push_back(course5.id.clone());

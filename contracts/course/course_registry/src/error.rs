@@ -7,8 +7,8 @@ use soroban_sdk::{contracterror, panic_with_error, Env};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    OnlyCreatorCanAddGoals = 1,  
-    EmptyGoalContent = 2,   
+    OnlyCreatorCanAddGoals = 1,
+    EmptyGoalContent = 2,
     CourseIdNotExist = 3,
     OnlyCreatorCanArchive = 4,
     CourseAlreadyArchived = 5,
@@ -28,6 +28,11 @@ pub enum Error {
     EmptyGoalId = 19,
     GoalCourseMismatch = 20,
     ModuleNotFound = 21,
+    UnauthorizedCaller = 401,
+    UnauthorizedCourseAccess = 402,
+    InvalidAdminOperation = 403,
+    EmptyModuleTitle = 404,
+    DuplicateModulePosition = 405,
     EmptyModuleId = 22,
     PrereqNotInList = 23,
 }

@@ -3,9 +3,12 @@
 
 #![no_std]
 
+/// Contract version for tracking deployments and upgrades
+pub const VERSION: &str = "1.0.0";
+
+pub mod error;
 pub mod functions;
 pub mod schema;
-pub mod error;
 
 #[cfg(test)]
 mod test;
@@ -13,85 +16,68 @@ mod test;
 use crate::schema::{AdminConfig, LightProfile, UserProfile, UserRole, UserStatus};
 use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
 
+/// User Management Contract
+///
+/// This contract handles user registration, profile management, authentication,
+/// and administrative functions for the SkillCert platform. It manages user roles,
+/// permissions, and provides comprehensive user lifecycle management.
 #[contract]
 pub struct UserManagement;
 
 #[contractimpl]
 impl UserManagement {
-    pub fn save_profile(
-        env: Env,
-        name: String,
-        lastname: String,
-        email: String,
-        password: String,
-        confirm_password: String,
-        specialization: String,
-        languages: Vec<String>,
-        teaching_categories: Vec<String>,
-        user: Address,
-    ) -> UserProfile {
-        functions::save_profile::user_management_save_profile(
-            env, user, name, lastname, email, password, confirm_password, specialization, languages, teaching_categories,
-        )
-    }
 
-    // Aquí agregamos la nueva función get_user_by_id
+
+    /// Retrieve a user profile by their address.
+    ///
+    /// This function fetches a complete user profile using the user's blockchain address.
+    /// Access may be restricted based on the requester's permissions.
+    ///
+    /// # Arguments
+    ///
+    /// * `env` - The Soroban environment
+    /// * `requester` - The address of the user requesting the profile
+    /// * `user_id` - The address of the user whose profile is being requested
+    ///
+    /// # Returns
+    ///
+    /// Returns the requested `UserProfile`.
     pub fn get_user_by_id(env: Env, requester: Address, user_id: Address) -> UserProfile {
         functions::get_user_by_id::get_user_by_id(env, requester, user_id)
     }
 
     /// Create a new user profile
     ///
-    /// Creates a new user profile with the provided information.
-    /// Validates required fields, ensures email uniqueness, and assigns default values.
+    /// Creates a new user profile using a UserProfile struct.
+    /// Validates mandatory fields (full_name and contact_email) and saves the profile.
     ///
     /// # Arguments
     /// * `env` - Soroban environment
-    /// * `creator` - Address creating the profile (usually an admin or the user themselves)
-    /// * `user_address` - Address of the user whose profile is being created
-    /// * `name` - User's full name (required)
-    /// * `email` - User's email address (required, must be unique)
-    /// * `role` - User's role in the system (required)
-    /// * `country` - User's country (required)
-    /// * `profession` - User's profession (optional)
-    /// * `goals` - User's goals or bio (optional)
-    /// * `profile_picture` - URL to profile picture (optional)
-    /// * `language` - User's preferred language (optional, defaults to "en")
+    /// * `user` - Address of the user whose profile is being created
+    /// * `profile` - UserProfile struct containing all profile data
     ///
     /// # Returns
     /// * `UserProfile` - The created user profile
     ///
     /// # Events
     /// Emits a user creation event upon successful creation
-    pub fn create_user_profile(
-        env: Env,
-        creator: Address,
-        user_address: Address,
-        name: String,
-        email: String,
-        role: UserRole,
-        country: String,
-        profession: Option<String>,
-        goals: Option<String>,
-        profile_picture: Option<String>,
-        language: Option<String>,
-    ) -> UserProfile {
-        functions::create_user_profile::create_user_profile(
-            env,
-            creator,
-            user_address,
-            name,
-            email,
-            role,
-            country,
-            profession,
-            goals,
-            profile_picture,
-            language,
-        )
+    pub fn create_user_profile(env: Env, user: Address, profile: UserProfile) -> UserProfile {
+        functions::create_user_profile::create_user_profile(env, user, profile)
     }
 
-    /// Public admin check for cross-contract calls
+    /// Check if an address has admin privileges.
+    ///
+    /// This function is used by other contracts to verify admin status
+    /// for cross-contract authorization checks.
+    ///
+    /// # Arguments
+    ///
+    /// * `env` - The Soroban environment
+    /// * `who` - The address to check for admin privileges
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the address has admin privileges, `false` otherwise.
     pub fn is_admin(env: Env, who: Address) -> bool {
         functions::is_admin::is_admin(env, who)
     }
@@ -210,6 +196,6 @@ impl UserManagement {
     /// # Returns
     /// * `bool` - True if system is initialized
     pub fn is_system_initialized(env: Env) -> bool {
-        functions::admin_management::is_initialized(env)
+        functions::admin_management::is_system_initialized(env)
     }
 }

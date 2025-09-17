@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use super::utils::{to_lowercase, trim, u32_to_string};
+use crate::error::{handle_error, Error};
 use crate::schema::{Course, CourseLevel};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
-use crate::error::{Error, handle_error};
-use super::utils::{u32_to_string, trim, to_lowercase};
 
 const COURSE_KEY: Symbol = symbol_short!("course");
 const TITLE_KEY: Symbol = symbol_short!("title");
 const COURSE_ID: Symbol = symbol_short!("course");
 
-pub fn course_registry_create_course(
+pub fn create_course(
     env: Env,
     creator: Address,
     title: String,
@@ -28,7 +28,6 @@ pub fn course_registry_create_course(
     let trimmed_title = trim(&env, &title);
     if title.is_empty() || trimmed_title.is_empty() {
         handle_error(&env, Error::EmptyCourseTitle)
-
     }
 
     // ensure the price is greater than 0
@@ -39,10 +38,7 @@ pub fn course_registry_create_course(
     let lowercase_title = to_lowercase(&env, &title);
 
     // to avoid duplicate title,
-    let title_key: (Symbol, String) = (
-        TITLE_KEY,
-        lowercase_title
-    );
+    let title_key: (Symbol, String) = (TITLE_KEY, lowercase_title);
 
     if env.storage().persistent().has(&title_key) {
         handle_error(&env, Error::DuplicateCourseTitle)
@@ -56,7 +52,6 @@ pub fn course_registry_create_course(
 
     if env.storage().persistent().has(&storage_key) {
         handle_error(&env, Error::DuplicateCourseId)
-
     }
 
     // create a new course
@@ -158,7 +153,7 @@ mod test {
         let client = CourseRegistryClient::new(&env, &contract_id);
         let title: String = String::from_str(&env, "title");
         let description: String = String::from_str(&env, "A description");
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         let another_course_title: String = String::from_str(&env, "another title");
         let another_course_description: String = String::from_str(&env, "another description");
@@ -206,7 +201,7 @@ mod test {
         let title: String = String::from_str(&env, "title");
         let description: String = String::from_str(&env, "A description");
         let another_description: String = String::from_str(&env, "another description");
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         client.create_course(
             &Address::generate(&env),
@@ -242,7 +237,7 @@ mod test {
         let client = CourseRegistryClient::new(&env, &contract_id);
         let title: String = String::from_str(&env, "");
         let description: String = String::from_str(&env, "A description");
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         client.create_course(
             &Address::generate(&env),
@@ -290,7 +285,7 @@ mod test {
         let client = CourseRegistryClient::new(&env, &contract_id);
         let title: String = String::from_str(&env, "   ");
         let description: String = String::from_str(&env, "A description");
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         client.create_course(
             &Address::generate(&env),
@@ -315,7 +310,7 @@ mod test {
         let title1: String = String::from_str(&env, "Programming Basics");
         let title2: String = String::from_str(&env, "PROGRAMMING BASICS");
         let description: String = String::from_str(&env, "A description");
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         client.create_course(
             &Address::generate(&env),
@@ -522,7 +517,7 @@ mod test {
         env.mock_all_auths();
         let contract_id: Address = env.register(CourseRegistry, {});
         let client = CourseRegistryClient::new(&env, &contract_id);
-        let price: u128 = 1000;
+        let price: u128 = crate::schema::DEFAULT_COURSE_PRICE;
 
         let course1 = client.create_course(
             &Address::generate(&env),

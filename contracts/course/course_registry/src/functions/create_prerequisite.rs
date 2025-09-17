@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use crate::error::{handle_error, Error};
 use crate::schema::{Course, DataKey};
-use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, Map, String, Symbol, Vec};
 
 const PREREQ_CREATED_EVENT: Symbol = symbol_short!("prereqAdd");
 
-pub fn course_registry_add_prerequisite(
-    env: Env,
-    creator: Address,
-    course_id: String,
-    prerequisites: Vec<String>,
-) {
+pub fn add_prerequisite(env: Env, creator: Address, course_id: String, prerequisites: Vec<String>) {
     creator.require_auth();
 
     let course_key: (Symbol, String) = (symbol_short!("course"), course_id.clone());
@@ -27,7 +22,8 @@ pub fn course_registry_add_prerequisite(
     }
 
     for prerequisite_id in prerequisites.iter() {
-        let prereq_course_key: (Symbol, String) = (symbol_short!("course"), prerequisite_id.clone());
+        let prereq_course_key: (Symbol, String) =
+            (symbol_short!("course"), prerequisite_id.clone());
         if !env.storage().persistent().has(&prereq_course_key) {
             handle_error(&env, Error::PrereqCourseNotFound)
         }
@@ -44,7 +40,6 @@ pub fn course_registry_add_prerequisite(
         (PREREQ_CREATED_EVENT, course_id),
         prerequisites.len() as u32,
     );
-
 }
 
 fn validate_no_circular_dependency(env: &Env, course_id: &String, new_prerequisites: &Vec<String>) {

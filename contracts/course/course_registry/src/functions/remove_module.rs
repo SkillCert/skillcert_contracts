@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use crate::error::{handle_error, Error};
 use crate::schema::CourseModule;
-use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Env, String};
 
-pub fn course_registry_remove_module(env: &Env, module_id: String) -> Result<(), &'static str> {
+pub fn remove_module(env: &Env, module_id: String) -> Result<(), &'static str> {
     if module_id.len() == 0 {
         handle_error(&env, Error::EmptyModuleId)
     }
@@ -26,7 +26,7 @@ pub fn course_registry_remove_module(env: &Env, module_id: String) -> Result<(),
         .persistent()
         .remove(&(symbol_short!("module"), module_id.clone()));
 
-    /// Emits an event to indicate the module has been removed.
+    // Emits an event to indicate the module has been removed.
     env.events().publish((module_id,), "module_removed");
 
     Ok(())

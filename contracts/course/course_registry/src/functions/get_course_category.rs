@@ -2,7 +2,7 @@
 // Copyright (c) 2025 SkillCert
 
 use crate::schema::{CourseCategory, DataKey};
-use soroban_sdk::{Env};
+use soroban_sdk::Env;
 
 /// Retrieves a course category by its ID.
 ///
@@ -15,6 +15,8 @@ use soroban_sdk::{Env};
 ///
 /// Storage used:
 /// - DataKey::CourseCategory(id) -> CourseCategory
-pub fn course_registry_get_course_category(env: &Env, category_id: u128) -> Option<CourseCategory> {
-    env.storage().persistent().get(&DataKey::CourseCategory(category_id))
+pub fn get_course_category(env: &Env, category_id: u128) -> Option<CourseCategory> {
+    env.storage()
+        .persistent()
+        .get(&DataKey::CourseCategory(category_id))
 }

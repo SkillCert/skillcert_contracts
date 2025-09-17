@@ -3,6 +3,13 @@
 
 use soroban_sdk::{contracttype, Address, String, Vec};
 
+/// Course registry defaults and limits
+pub const DEFAULT_COURSE_PRICE: u128 = 1000;
+pub const MAX_LOOP_GUARD: u32 = 1000;
+pub const FILTER_MIN_PRICE: u128 = 500;
+pub const MAX_SCAN_ID: u32 = 50;
+pub const MAX_EMPTY_CHECKS: u32 = 10;
+
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct CourseModule {
@@ -39,9 +46,9 @@ pub enum DataKey {
     CourseGoalList(String),     // Optional: Keep a list of goal IDs per course
     CourseGoal(String, String), // (course_id, goal_id)
     CoursePrerequisites(String),
-    CategorySeq,                // Sequence counter for category IDs
-    CourseCategory(u128),       // Course category by ID
-    Admins,                     // List of admin addresses
+    CategorySeq,          // Sequence counter for category IDs
+    CourseCategory(u128), // Course category by ID
+    Admins,               // List of admin addresses
 }
 
 #[contracttype]

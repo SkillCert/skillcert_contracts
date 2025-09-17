@@ -1,13 +1,76 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::schema::{AdminConfig, DataKey, LightProfile, UserProfile, UserStatus};
-use crate::error::{Error, handle_error};
+use crate::error::{handle_error, Error};
+use crate::schema::{AdminConfig, DataKey, LightProfile, UserProfile, UserStatus, DEFAULT_MAX_PAGE_SIZE};
 use core::iter::Iterator;
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
 // Event symbol for user deactivation
 const EVT_USER_DEACTIVATED: Symbol = symbol_short!("usr_deact");
+
+/// Delete (deactivate) a user account
+///
+/// This function performs a soft delete by marking the user as inactive instead of
+/// permanently removing their data. Only admins or the user themselves can trigger deletion.
+///
+/// # Arguments
+/// * `env` - Soroban environment
+/// * `caller` - Address performing the deletion (must be admin or the user themselves)
+/// * `user_id` - Address of the user to be deactivated
+///
+/// # Panics
+/// * If caller authentication fails
+/// * If user doesn't exist
+/// * If caller is neither admin nor the user themselves
+/// * If user is already inactive
+///
+/// # Events
+/// Emits a user deactivation event upon successful deletion
+pub fn delete_user(env: Env, caller: Address, user_id: Address) -> () {
+    // Require authentication for the caller
+    caller.require_auth();
+
+    // DEPENDENCY: Validate that user exists (using user existence validation)
+    let _user_profile = validate_user_exists(&env, &user_id)
+        .unwrap_or_else(|_| handle_error(&env, Error::UserNotFound));
+
+    // Authorization: only admin or the user themselves can trigger deletion
+    let is_caller_admin = is_admin(&env, &caller);
+    let is_self_deletion = caller == user_id;
+
+    if !is_caller_admin && !is_self_deletion {
+        handle_error(&env, Error::AccessDenied)
+    }
+
+    // Check current user status from light profile
+    let light_profile_key = DataKey::UserProfileLight(user_id.clone());
+    let mut light_profile: LightProfile = env
+        .storage()
+        .persistent()
+        .get(&light_profile_key)
+        .unwrap_or_else(|| handle_error(&env, Error::UserProfileNotFound));
+
+    // Check if user is already inactive
+    if light_profile.status == UserStatus::Inactive {
+        handle_error(&env, Error::InactiveUser)
+    }
+
+    // Perform soft delete: mark user as inactive
+    light_profile.status = UserStatus::Inactive;
+
+    // Update the light profile with new status
+    env.storage()
+        .persistent()
+        .set(&light_profile_key, &light_profile);
+
+    // Note: We keep the full UserProfile intact for potential future reactivation
+    // Only the status in LightProfile is changed to Inactive
+
+    // Emits a user deactivation event upon successful deletion.
+    env.events()
+        .publish((EVT_USER_DEACTIVATED, &caller), user_id.clone());
+}
 
 /// Check if the caller is an admin
 fn is_admin(env: &Env, who: &Address) -> bool {
@@ -42,69 +105,6 @@ fn validate_user_exists(env: &Env, user_id: &Address) -> Result<UserProfile, ()>
         .ok_or(())
 }
 
-/// Delete (deactivate) a user account
-/// 
-/// This function performs a soft delete by marking the user as inactive instead of 
-/// permanently removing their data. Only admins or the user themselves can trigger deletion.
-/// 
-/// # Arguments
-/// * `env` - Soroban environment
-/// * `caller` - Address performing the deletion (must be admin or the user themselves)
-/// * `user_id` - Address of the user to be deactivated
-/// 
-/// # Panics
-/// * If caller authentication fails
-/// * If user doesn't exist
-/// * If caller is neither admin nor the user themselves
-/// * If user is already inactive
-/// 
-/// # Events
-/// Emits a user deactivation event upon successful deletion
-pub fn delete_user(env: Env, caller: Address, user_id: Address) -> () {
-    // Require authentication for the caller
-    caller.require_auth();
-
-    // DEPENDENCY: Validate that user exists (using user existence validation)
-    let _user_profile = validate_user_exists(&env, &user_id)
-        .unwrap_or_else(|_| handle_error(&env, Error::UserNotFound));
-
-    // Authorization: only admin or the user themselves can trigger deletion
-    let is_caller_admin = is_admin(&env, &caller);
-    let is_self_deletion = caller == user_id;
-    
-    if !is_caller_admin && !is_self_deletion {
-        handle_error(&env, Error::AccessDenied)
-    }
-
-    // Check current user status from light profile
-    let light_profile_key = DataKey::UserProfileLight(user_id.clone());
-    let mut light_profile: LightProfile = env
-        .storage()
-        .persistent()
-        .get(&light_profile_key)
-        .unwrap_or_else(|| handle_error(&env, Error::UserProfileNotFound));
-
-    // Check if user is already inactive
-    if light_profile.status == UserStatus::Inactive {
-        handle_error(&env, Error::InactiveUser)
-    }
-
-    // Perform soft delete: mark user as inactive
-    light_profile.status = UserStatus::Inactive;
-
-    // Update the light profile with new status
-    env.storage()
-        .persistent()
-        .set(&light_profile_key, &light_profile);
-
-    // Note: We keep the full UserProfile intact for potential future reactivation
-    // Only the status in LightProfile is changed to Inactive
-
-    /// Emits a user deactivation event upon successful deletion.
-    env.events()
-        .publish((EVT_USER_DEACTIVATED, &caller), user_id.clone());
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,38 +120,19 @@ mod tests {
     }
 
     fn create_test_user(env: &Env, contract_id: &Address, user: &Address) -> UserProfile {
-        let name = String::from_str(env, "Test");
-        let lastname = String::from_str(env, "User");
-        let email = String::from_str(env, "test@example.com");
-        let specialization = String::from_str(env, "Testing");
-        let languages = soroban_sdk::Vec::from_array(env, [String::from_str(env, "English")]);
-        let teaching_categories = soroban_sdk::Vec::from_array(env, [String::from_str(env, "QA")]);
-
         // Create user profile directly in storage for testing
         let user_profile = UserProfile {
-            name: name.clone(),
-            lastname: lastname.clone(),
-            email,
-            role: UserRole::Student, // Default role
-            country: String::from_str(env, ""),
-            profession: None,
-            goals: None,
-            profile_picture: None,
-            language: String::from_str(env, "en"),
-            password: String::from_str(env, "password123"),
-            confirm_password: String::from_str(env, "password123"),
-            specialization: specialization.clone(),
-            languages: languages.clone(),
-            teaching_categories: teaching_categories.clone(),
-            user: user.clone(),
+            full_name: String::from_str(env, "Test User"),
+            contact_email: String::from_str(env, "test@example.com"),
+            profession: Some(String::from_str(env, "Software Tester")),
+            country: Some(String::from_str(env, "United States")),
+            purpose: Some(String::from_str(env, "Learn testing methodologies")),
         };
 
         let light_profile = LightProfile {
-            name,
-            lastname,
-            specialization,
-            languages,
-            teaching_categories,
+            full_name: String::from_str(env, "Test User"),
+            profession: Some(String::from_str(env, "Software Tester")),
+            country: Some(String::from_str(env, "United States")),
             role: UserRole::Student,
             status: UserStatus::Active,
             user_address: user.clone(),
@@ -174,7 +155,7 @@ mod tests {
             let config = AdminConfig {
                 initialized: true,
                 super_admin: admin.clone(),
-                max_page_size: 100,
+                max_page_size: DEFAULT_MAX_PAGE_SIZE,
                 total_user_count: 0,
             };
             env.storage()
@@ -205,7 +186,7 @@ mod tests {
                 .persistent()
                 .get(&DataKey::UserProfileLight(user.clone()))
                 .expect("Light profile should exist");
-            
+
             assert_eq!(light_profile.status, UserStatus::Inactive);
 
             // Verify full profile still exists (soft delete)
@@ -214,8 +195,9 @@ mod tests {
                 .persistent()
                 .get(&DataKey::UserProfile(user.clone()))
                 .expect("Full profile should still exist");
-            
-            assert_eq!(full_profile.user, user);
+
+            // Profile should still exist with the same data
+            assert_eq!(full_profile.full_name, String::from_str(&env, "Test User"));
         });
     }
 
@@ -241,7 +223,7 @@ mod tests {
                 .persistent()
                 .get(&DataKey::UserProfileLight(user.clone()))
                 .expect("Light profile should exist");
-            
+
             assert_eq!(light_profile.status, UserStatus::Inactive);
         });
     }
@@ -295,7 +277,7 @@ mod tests {
                 .persistent()
                 .get(&DataKey::UserProfileLight(user.clone()))
                 .expect("Light profile should exist");
-            
+
             light_profile.status = UserStatus::Inactive;
             env.storage()
                 .persistent()
