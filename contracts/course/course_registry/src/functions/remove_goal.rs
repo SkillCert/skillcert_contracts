@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{Course, CourseGoal, DataKey};
+use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
 
 const GOAL_REMOVED_EVENT: Symbol = symbol_short!("goalrem");
@@ -13,7 +17,8 @@ pub fn course_registry_remove_goal(
     
     // Validate input
     if goal_id.is_empty() {
-        panic!("Goal ID cannot be empty");
+        handle_error(&env, Error::EmptyGoalId)
+
     }
 
     // Load course to verify it exists and check permissions
@@ -27,7 +32,7 @@ pub fn course_registry_remove_goal(
     // Only course creator or authorized admin can remove goals
     if course.creator != caller {
         // TODO: Add admin check when admin management is implemented
-        panic!("Only the course creator can remove goals");
+        handle_error(&env, Error::Unauthorized)
     }
 
     // Check if the goal exists
@@ -40,13 +45,13 @@ pub fn course_registry_remove_goal(
 
     // Verify the goal belongs to the specified course
     if goal.course_id != course_id {
-        panic!("Goal does not belong to the specified course");
+        handle_error(&env, Error::GoalCourseMismatch)
     }
 
     // Remove the goal from storage
     env.storage().persistent().remove(&goal_storage_key);
 
-    // Emit event for successful goal removal
+    /// Emits an event for successful goal removal.
     env.events().publish(
         (GOAL_REMOVED_EVENT, course_id.clone(), goal_id.clone()),
         goal.content.clone(),
@@ -91,7 +96,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Only the course creator can remove goals")]
+    #[should_panic(expected = "HostError: Error(Contract, #6)")]
     fn test_remove_goal_unauthorized() {
         let env = Env::default();
         env.mock_all_auths();
@@ -168,7 +173,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Goal ID cannot be empty")]
+    #[should_panic(expected = "HostError: Error(Contract, #19)")]
     fn test_remove_goal_empty_goal_id() {
         let env = Env::default();
         env.mock_all_auths();

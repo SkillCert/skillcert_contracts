@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{AdminConfig, DataKey, LightProfile, UserRole, UserStatus};
+use crate::error::{Error, handle_error};
 use core::iter::Iterator;
 use soroban_sdk::{Address, Env, String, Vec};
 
@@ -23,7 +27,7 @@ fn get_admin_config(env: &Env) -> AdminConfig {
     env.storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
-        .unwrap_or_else(|| panic!("System not initialized"))
+        .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized))
 }
 
 /// Checks whether the caller is an admin with enhanced security
@@ -130,7 +134,7 @@ pub fn list_all_users(
 
     // Check system initialization first
     if !is_system_initialized(&env) {
-        panic!("System not initialized");
+        handle_error(&env, Error::SystemNotInitialized)
     }
 
     // Get admin configuration
@@ -138,7 +142,7 @@ pub fn list_all_users(
 
     // Authorization: only admins can call
     if !is_admin(&env, &caller) {
-        panic!("Access denied");
+        handle_error(&env, Error::AccessDenied)
     }
 
     // Validate and sanitize input parameters
@@ -149,7 +153,7 @@ pub fn list_all_users(
     // Additional bounds checking for page parameter
     let max_safe_page = u32::MAX / page_size.max(1) - 1; // Prevent overflow
     if page > max_safe_page {
-        panic!("Page parameter too large");
+        handle_error(&env, Error::PageParamTooLarge);
     }
 
     // Read user index (list of registered user addresses)

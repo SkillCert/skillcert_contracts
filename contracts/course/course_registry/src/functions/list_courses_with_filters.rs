@@ -1,6 +1,10 @@
+
+use crate::functions::utils::u32_to_string;
+
 use crate::schema::{Course, CourseFilters};
 use soroban_sdk::{symbol_short, Env, Symbol, Vec};
-use super::utils::u32_to_string; // Import the utility function
+
+
 
 const COURSE_KEY: Symbol = symbol_short!("course");
 
@@ -31,7 +35,7 @@ pub fn course_registry_list_courses_with_filters(
         // Use the utility function instead of to_string()
         let course_id = u32_to_string(env, id as u32);
         let key = (COURSE_KEY, course_id.clone());
-        
+
         if !env.storage().persistent().has(&key) {
             empty_checks += 1;
             id += 1;

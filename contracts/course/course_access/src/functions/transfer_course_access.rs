@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{CourseAccess, DataKey};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
+use crate::error::{Error, handle_error};
 
 const COURSE_TRANSFER_EVENT: Symbol = symbol_short!("transfer");
 
@@ -10,7 +14,7 @@ pub fn transfer_course_access(env: Env, course_id: String, from: Address, to: Ad
 
     // Check if access exists to transfer
     if !env.storage().persistent().has(&key) {
-        panic!("User does not have access to this course");
+        handle_error(&env, Error::UserNoAccessCourse);
     }
 
     // Create the course access entry for the new user
@@ -35,7 +39,7 @@ pub fn transfer_course_access(env: Env, course_id: String, from: Address, to: Ad
         1000,
     );
 
-    //emit an event
+    /// Emits an event indicating a course access transfer between users.
     env.events()
         .publish((COURSE_TRANSFER_EVENT,), (course_id, from, to));
 }

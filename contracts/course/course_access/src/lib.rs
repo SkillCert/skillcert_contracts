@@ -1,12 +1,17 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 #![no_std]
 
 mod functions;
 mod schema;
+mod error;
 
 use soroban_sdk::{contract, contractimpl, Address, Env, String};
 
 pub use functions::*;
 pub use schema::{CourseUsers, UserCourses};
+pub use error::Error;
 
 #[contract]
 pub struct CourseAccessContract;

@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{DataKey, KEY_COURSE_REG_ADDR, KEY_USER_MGMT_ADDR};
 use soroban_sdk::{symbol_short, Address, Env, IntoVal, String, Symbol, Vec};
+use crate::error::{Error, handle_error};
 
 const USER_KEY: Symbol = symbol_short!("user");
 const COURSES_KEY: Symbol = symbol_short!("courses");
@@ -34,7 +38,7 @@ pub fn course_access_revoke_all_access(env: Env, caller: Address, course_id: Str
 
     // Authorization: only admin or course creator
     if !(is_admin || is_creator) {
-        panic!("Not authorized");
+        handle_error(&env, Error::Unauthorized)
     }
 
     // Fetch all users with access to this course
@@ -52,7 +56,7 @@ pub fn course_access_revoke_all_access(env: Env, caller: Address, course_id: Str
 
     let count = affected_users.len();
     if count == 0 {
-        // Emit event with 0 and return
+        /// Emits an event indicating that no users had their access revoked.
         env.events().publish((REVOKE_ALL_EVENT, course_id.clone()), count);
         return 0;
     }
@@ -98,6 +102,7 @@ pub fn course_access_revoke_all_access(env: Env, caller: Address, course_id: Str
     }
 
     // Emit event with number of users affected
+        /// Emits an event with the number of users whose access was revoked.
     env.events().publish((REVOKE_ALL_EVENT, course_id.clone()), count);
 
     count

@@ -1,6 +1,10 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{Course, EditCourseParams};
+use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
-use super::utils::{trim, to_lowercase};
+use super::utils::{to_lowercase, trim};
 
 const COURSE_KEY: Symbol = symbol_short!("course");
 const TITLE_KEY: Symbol = symbol_short!("title");
@@ -25,17 +29,18 @@ pub fn course_registry_edit_course(
 
     // --- Permission: only creator can edit ---
     if creator != course.creator {
-        panic!("Course error: Unauthorized edit");
+        handle_error(&env, Error::Unauthorized)
     }
 
     // --- Title update (validate + uniqueness) ---
+
     if let Some(t) = params.new_title {
         // Clone the string to avoid move issues
         let t_str = t.clone();
         let t_trim = trim(&env, &t_str);
       
         if t_trim.is_empty() {
-            panic!("Course error: Course Title cannot be empty");
+            handle_error(&env, Error::EmptyCourseTitle)
         }
 
         // Only check/rotate title index if it's effectively changing (case-insensitive)
@@ -47,7 +52,7 @@ pub fn course_registry_edit_course(
             let new_title_key: (Symbol, String) =
                 (TITLE_KEY, new_title_lc);
             if env.storage().persistent().has(&new_title_key) {
-                panic!("Course error: Course Title already exists");
+                handle_error(&env, Error::DuplicateCourseTitle)
             }
 
             // remove old title index and set new one
@@ -68,7 +73,7 @@ pub fn course_registry_edit_course(
     // --- Price (>0) ---
     if let Some(p) = params.new_price {
         if p == 0 {
-            panic!("Course error: Price must be greater than 0");
+            handle_error(&env, Error::InvalidPrice)
         }
         course.price = p;
     }
@@ -198,7 +203,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Course error: Unauthorized edit")]
+    #[should_panic(expected = "HostError: Error(Contract, #6)")]
     fn test_edit_course_unauthorized() {
         let env = Env::default();
         env.mock_all_auths();
@@ -270,7 +275,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Course error: Course Title cannot be empty")]
+    #[should_panic(expected = "HostError: Error(Contract, #8)")]
     fn test_edit_course_empty_title() {
         let env = Env::default();
         env.mock_all_auths();
@@ -311,7 +316,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Course error: Price must be greater than 0")]
+    #[should_panic(expected = "HostError: Error(Contract, #9)")]
     fn test_edit_course_zero_price() {
         let env = Env::default();
         env.mock_all_auths();
@@ -352,7 +357,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Course error: Course Title already exists")]
+    #[should_panic(expected = "HostError: Error(Contract, #10)")]
     fn test_edit_course_duplicate_title() {
         let env = Env::default();
         env.mock_all_auths();

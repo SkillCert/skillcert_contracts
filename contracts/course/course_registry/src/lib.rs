@@ -1,7 +1,11 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 #![no_std]
 
 pub mod functions;
 pub mod schema;
+pub mod error;
 
 #[cfg(test)]
 mod test;
@@ -40,8 +44,16 @@ impl CourseRegistry {
         )
     }
 
+    pub fn create_course_category(env: Env, caller: Address, name: String, description: Option<String>) -> u128 {
+        functions::create_course_category::course_registry_create_course_category(env, caller, name, description)
+    }
+
     pub fn get_course(env: Env, course_id: String) -> Course {
         functions::get_course::course_registry_get_course(&env, course_id)
+    }
+
+    pub fn get_course_category(env: Env, category_id: u128) -> Option<CourseCategory> {
+        functions::get_course_category::course_registry_get_course_category(&env, category_id)
     }
 
     pub fn get_courses_by_instructor(env: Env, instructor: Address) -> Vec<Course> {
@@ -168,23 +180,5 @@ impl CourseRegistry {
         )
     }
 
-    /// Create a new course category (admin-only)
-    pub fn create_course_category(
-        env: Env,
-        caller: Address,
-        name: String,
-        description: Option<String>,
-    ) -> u128 {
-        functions::create_course_category::course_registry_create_course_category(
-            env,
-            caller,
-            name,
-            description,
-        )
-    }
-
-    /// Get a course category by ID
-    pub fn get_course_category(env: Env, category_id: u128) -> Option<CourseCategory> {
-        functions::get_course_category::course_registry_get_course_category(&env, category_id)
-    }
+    
 }

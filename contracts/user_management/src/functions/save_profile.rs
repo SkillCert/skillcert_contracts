@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use crate::schema::{DataKey, LightProfile, UserProfile, UserRole, UserStatus};
+use crate::error::{Error, handle_error};
 use core::iter::Iterator;
 use soroban_sdk::{Address, Env, String, Vec};
 
@@ -39,80 +43,80 @@ pub fn user_management_save_profile(
 
     // Validate required fields
     if name.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if lastname.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if email.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if password.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if confirm_password.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if specialization.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     // Validate password confirmation
     if password != confirm_password {
-        panic!("Password and confirmation password do not match");
+        handle_error(&env, Error::PasswordMismatch);
     }
 
     // Validate password length
     if password.len() < MIN_PASSWORD_LENGTH as u32 || password.len() > MAX_PASSWORD_LENGTH as u32 {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     // Basic email validation - check minimum length
     if email.len() < 5 || email.len() > MAX_EMAIL_LENGTH as u32 {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     // Validate string lengths and content
     if !validate_string_content(&env, &name, MAX_NAME_LENGTH) {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if !validate_string_content(&env, &lastname, MAX_NAME_LENGTH) {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if !validate_string_content(&env, &email, MAX_EMAIL_LENGTH) {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     if !validate_string_content(&env, &specialization, MAX_SPECIALIZATION_LENGTH) {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     // Validate languages array
     if languages.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     for language in languages.iter() {
         if language.is_empty() || !validate_string_content(&env, &language, MAX_LANGUAGE_LENGTH) {
-            panic!("Invalid input");
+            handle_error(&env, Error::InvalidInput);
         }
     }
 
     // Validate teaching categories array
     if teaching_categories.is_empty() {
-        panic!("Invalid input");
+        handle_error(&env, Error::InvalidInput);
     }
 
     for category in teaching_categories.iter() {
         if category.is_empty() || !validate_string_content(&env, &category, MAX_CATEGORY_LENGTH) {
-            panic!("Invalid input");
+            handle_error(&env, Error::InvalidInput);
         }
     }
 
@@ -120,11 +124,44 @@ pub fn user_management_save_profile(
     let storage_key = DataKey::UserProfile(caller.clone());
     let is_new_user = !env.storage().persistent().has(&storage_key);
 
-    // Create the user profile
+    // If this is a new user, we need to get the existing profile to preserve role and other fields
+    let existing_profile = if !is_new_user {
+        env.storage()
+            .persistent()
+            .get::<DataKey, UserProfile>(&storage_key)
+            .expect("Profile should exist for update")
+    } else {
+        // For new users, create with default values
+        UserProfile {
+            name: name.clone(),
+            lastname: lastname.clone(),
+            email: email.clone(),
+            role: UserRole::Student, // Default role
+            country: String::from_str(&env, ""),
+            profession: None,
+            goals: None,
+            profile_picture: None,
+            language: String::from_str(&env, "en"),
+            password: password.clone(),
+            confirm_password: confirm_password.clone(),
+            specialization: specialization.clone(),
+            languages: languages.clone(),
+            teaching_categories: teaching_categories.clone(),
+            user: caller.clone(),
+        }
+    };
+
+    // Create the updated user profile (preserving role and other system fields)
     let user_profile = UserProfile {
         name: name.clone(),
         lastname: lastname.clone(),
-        email,
+        email: if is_new_user { email.clone() } else { existing_profile.email.clone() }, // Don't change email on update
+        role: existing_profile.role.clone(), // Preserve role
+        country: existing_profile.country.clone(), // Preserve country
+        profession: existing_profile.profession.clone(), // Preserve profession
+        goals: existing_profile.goals.clone(), // Preserve goals
+        profile_picture: existing_profile.profile_picture.clone(), // Preserve profile picture
+        language: existing_profile.language.clone(), // Preserve language
         password: password.clone(), // In production, this should be hashed
         confirm_password: confirm_password.clone(),
         specialization: specialization.clone(),
@@ -143,7 +180,7 @@ pub fn user_management_save_profile(
         specialization,
         languages,
         teaching_categories,
-        role: UserRole::Student, // Default role, should be set by admin separately
+        role: existing_profile.role, // Use role from existing profile
         status: UserStatus::Active, // Default status
         user_address: caller.clone(),
     };
@@ -236,7 +273,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Password and confirmation password do not match")]
+    #[should_panic(expected = "HostError: Error(Contract, #25)")]
     fn test_save_profile_password_mismatch() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});
@@ -262,7 +299,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid input")]
+    #[should_panic(expected = "HostError: Error(Contract, #24)")]
     fn test_save_profile_with_empty_name() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});
@@ -287,7 +324,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid input")]
+    #[should_panic(expected = "HostError: Error(Contract, #24)")]
     fn test_save_profile_with_empty_email() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});
@@ -312,7 +349,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid input")]
+    #[should_panic(expected = "HostError: Error(Contract, #24)")]
     fn test_save_profile_with_short_password() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});
@@ -337,7 +374,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid input")]
+    #[should_panic(expected = "HostError: Error(Contract, #24)")]
     fn test_save_profile_with_empty_languages() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});
@@ -362,7 +399,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid input")]
+    #[should_panic(expected = "HostError: Error(Contract, #24)")]
     fn test_save_profile_with_empty_teaching_categories() {
         let env = Env::default();
         let contract_id = env.register(UserManagement, {});

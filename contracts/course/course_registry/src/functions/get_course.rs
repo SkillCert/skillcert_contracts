@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
+
 use soroban_sdk::{Env, String, Symbol};
+use crate::error::{Error, handle_error};
 
 use crate::schema::Course;
 
@@ -14,7 +18,7 @@ pub fn course_registry_get_course(env: &Env, course_id: String) -> Course {
         .expect("Course not found");
 
     match course.is_archived {
-        true => panic!("Course is archived"),
+        true => handle_error(&env, Error::CourseAlreadyArchived),
         false => course,
     }
 }
@@ -23,7 +27,7 @@ pub fn course_registry_get_course(env: &Env, course_id: String) -> Course {
 mod test {
     use crate::{schema::Course, CourseRegistry, CourseRegistryClient};
     use soroban_sdk::{testutils::Address as _, Address, Env, String};
-    
+
     fn create_course<'a>(client: &CourseRegistryClient<'a>, creator: &Address) -> Course {
         let title = String::from_str(&client.env, "title");
         let description = String::from_str(&client.env, "description");
@@ -54,7 +58,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Course is archived")]
+    #[should_panic(expected = "HostError: Error(Contract, #5)")]
     fn test_get_archived_course() {
         let env = Env::default();
         env.mock_all_auths();

@@ -1,5 +1,8 @@
-use crate::schema::{Course, DataKey};
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 SkillCert
 
+use crate::schema::{Course, DataKey};
+use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
 
 const PREREQ_REMOVED_EVENT: Symbol = symbol_short!("prereqrmv");
@@ -22,7 +25,7 @@ pub fn course_registry_remove_prerequisite(
 
     // Authorization: only creator can remove prerequisites
     if course.creator != creator {
-        panic!("Only the course creator can remove prerequisites");
+        handle_error(&env, Error::Unauthorized)
     }
 
     // Load current list of prerequisites
@@ -42,7 +45,7 @@ pub fn course_registry_remove_prerequisite(
             prerequisites.remove(i as u32);
         }
         None => {
-            panic!("Prerequisite not found in the list");
+            handle_error(&env, Error::PrereqNotInList)
         }
     }
 
@@ -52,7 +55,7 @@ pub fn course_registry_remove_prerequisite(
         &prerequisites,
     );
 
-    // Emit event
+    /// Emits an event for successful prerequisite removal.
     env.events()
         .publish((PREREQ_REMOVED_EVENT, course_id), prerequisite_course_id);
 
@@ -123,7 +126,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Only the course creator can remove prerequisites")]
+    #[should_panic(expected = "HostError: Error(Contract, #6)")]
     fn test_remove_prerequisite_unauthorized() {
         let env = Env::default();
         env.mock_all_auths();
@@ -181,7 +184,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Prerequisite not found in the list")]
+    #[should_panic(expected = "HostError: Error(Contract, #23)")]
     fn test_remove_prerequisite_not_in_list() {
         let env = Env::default();
         env.mock_all_auths();
