@@ -13,7 +13,7 @@ pub mod schema;
 #[cfg(test)]
 mod test;
 
-use crate::schema::{AdminConfig, LightProfile, UserProfile, UserRole, UserStatus};
+use crate::schema::{AdminConfig, LightProfile, ProfileUpdateParams, UserProfile, UserRole, UserStatus};
 use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
 
 /// User Management Contract
@@ -26,52 +26,7 @@ pub struct UserManagement;
 
 #[contractimpl]
 impl UserManagement {
-    /// Save or update a user profile with comprehensive information.
-    ///
-    /// This function creates or updates a user profile with detailed information
-    /// including credentials, specialization, and teaching capabilities.
-    ///
-    /// # Arguments
-    ///
-    /// * `env` - The Soroban environment
-    /// * `name` - User's first name
-    /// * `lastname` - User's last name
-    /// * `email` - User's email address
-    /// * `password` - User's password
-    /// * `confirm_password` - Password confirmation
-    /// * `specialization` - User's area of specialization
-    /// * `languages` - Languages the user speaks
-    /// * `teaching_categories` - Categories the user can teach
-    /// * `user` - User's blockchain address
-    ///
-    /// # Returns
-    ///
-    /// Returns the created or updated `UserProfile`.
-    pub fn save_profile(
-        env: Env,
-        name: String,
-        lastname: String,
-        email: String,
-        password: String,
-        confirm_password: String,
-        specialization: String,
-        languages: Vec<String>,
-        teaching_categories: Vec<String>,
-        user: Address,
-    ) -> UserProfile {
-        functions::save_profile::save_profile(
-            env,
-            user,
-            name,
-            lastname,
-            email,
-            password,
-            confirm_password,
-            specialization,
-            languages,
-            teaching_categories,
-        )
-    }
+
 
     /// Retrieve a user profile by their address.
     ///
@@ -93,53 +48,54 @@ impl UserManagement {
 
     /// Create a new user profile
     ///
-    /// Creates a new user profile with the provided information.
-    /// Validates required fields, ensures email uniqueness, and assigns default values.
+    /// Creates a new user profile using a UserProfile struct.
+    /// Validates mandatory fields (full_name and contact_email) and saves the profile.
     ///
     /// # Arguments
     /// * `env` - Soroban environment
-    /// * `creator` - Address creating the profile (usually an admin or the user themselves)
-    /// * `user_address` - Address of the user whose profile is being created
-    /// * `name` - User's full name (required)
-    /// * `email` - User's email address (required, must be unique)
-    /// * `role` - User's role in the system (required)
-    /// * `country` - User's country (required)
-    /// * `profession` - User's profession (optional)
-    /// * `goals` - User's goals or bio (optional)
-    /// * `profile_picture` - URL to profile picture (optional)
-    /// * `language` - User's preferred language (optional, defaults to "en")
+    /// * `user` - Address of the user whose profile is being created
+    /// * `profile` - UserProfile struct containing all profile data
     ///
     /// # Returns
     /// * `UserProfile` - The created user profile
     ///
     /// # Events
     /// Emits a user creation event upon successful creation
-    pub fn create_user_profile(
+    pub fn create_user_profile(env: Env, user: Address, profile: UserProfile) -> UserProfile {
+        functions::create_user_profile::create_user_profile(env, user, profile)
+    }
+
+    /// Edit an existing user profile
+    ///
+    /// Updates an existing user profile with new values for allowed fields.
+    /// Only the user themselves or administrators can perform updates.
+    /// Email and role fields cannot be updated through this function.
+    ///
+    /// # Arguments
+    /// * `env` - Soroban environment
+    /// * `caller` - Address of the user performing the update
+    /// * `user_id` - Address of the user whose profile is being updated
+    /// * `updates` - ProfileUpdateParams containing fields to update
+    ///
+    /// # Returns
+    /// * `UserProfile` - The updated user profile
+    ///
+    /// # Panics
+    /// * If caller authentication fails
+    /// * If user profile doesn't exist
+    /// * If caller lacks permission to edit
+    /// * If any field validation fails
+    /// * If user is inactive
+    ///
+    /// # Events
+    /// Emits a user update event upon successful profile update
+    pub fn edit_user_profile(
         env: Env,
-        creator: Address,
-        user_address: Address,
-        name: String,
-        email: String,
-        role: UserRole,
-        country: String,
-        profession: Option<String>,
-        goals: Option<String>,
-        profile_picture: Option<String>,
-        language: Option<String>,
+        caller: Address,
+        user_id: Address,
+        updates: ProfileUpdateParams,
     ) -> UserProfile {
-        functions::create_user_profile::create_user_profile(
-            env,
-            creator,
-            user_address,
-            name,
-            email,
-            role,
-            country,
-            profession,
-            goals,
-            profile_picture,
-            language,
-        )
+        functions::edit_user_profile::edit_user_profile(env, caller, user_id, updates)
     }
 
     /// Check if an address has admin privileges.

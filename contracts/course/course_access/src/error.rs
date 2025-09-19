@@ -10,7 +10,7 @@ use soroban_sdk::{contracterror, panic_with_error, Env};
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
-pub enum Error {
+pub enum CourseAccessError {
     /// User already has access to the specified course
     UserAlreadyHasAccess = 1,
     /// User does not have access to the specified course
@@ -23,6 +23,8 @@ pub enum Error {
     EmailRequired = 5,
     /// Country field is required but not provided
     CountryRequired = 6,
+    /// Invalid input provided
+    InvalidInput = 7,
 }
 
 /// Handles contract errors by panicking with the specified error.
@@ -39,6 +41,6 @@ pub enum Error {
 ///
 /// This function always panics with the provided error, which is the intended behavior
 /// for error handling in Soroban contracts.
-pub fn handle_error(env: &Env, error: Error) -> ! {
+pub fn handle_error(env: &Env, error: CourseAccessError) -> ! {
     panic_with_error!(env, error);
 }

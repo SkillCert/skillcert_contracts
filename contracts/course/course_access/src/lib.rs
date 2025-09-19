@@ -10,9 +10,12 @@ mod error;
 mod functions;
 mod schema;
 
+#[cfg(test)]
+mod test;
+
 use soroban_sdk::{contract, contractimpl, Address, Env, String};
 
-pub use error::Error;
+pub use error::CourseAccessError;
 pub use functions::*;
 pub use schema::{CourseUsers, UserCourses};
 
@@ -61,7 +64,7 @@ impl CourseAccessContract {
     /// * `course_id` - The unique identifier of the course
     /// * `user` - The address of the user to grant access to
     pub fn grant_access(env: Env, course_id: String, user: Address) {
-        functions::grant_access::grant_access(env, course_id, user)
+        functions::grant_access::course_access_grant_access(env, course_id, user)
     }
 
     /// Revoke access for a specific user from a course.
@@ -79,7 +82,7 @@ impl CourseAccessContract {
     ///
     /// Returns `true` if access was successfully revoked, `false` otherwise.
     pub fn revoke_access(env: Env, course_id: String, user: Address) -> bool {
-        functions::revoke_access::revoke_access(env, course_id, user)
+        functions::revoke_access::course_access_revoke_access(env, course_id, user)
     }
 
     /// Save or update a user's profile on-chain.
@@ -95,7 +98,7 @@ impl CourseAccessContract {
     /// * `profession` - Optional profession/job title
     /// * `goals` - Optional learning goals or objectives
     /// * `country` - The user's country of residence
-    pub fn save_profile(
+    pub fn save_user_profile(
         env: Env,
         name: String,
         email: String,
@@ -104,7 +107,7 @@ impl CourseAccessContract {
         country: String,
     ) {
         let user = env.current_contract_address();
-        save_profile(env, name, email, profession, goals, country, user);
+        functions::save_profile::save_user_profile(env, name, email, profession, goals, country, user);
     }
 
     /// List all courses a user has access to.

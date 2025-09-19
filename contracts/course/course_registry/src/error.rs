@@ -28,8 +28,15 @@ pub enum Error {
     EmptyGoalId = 19,
     GoalCourseMismatch = 20,
     ModuleNotFound = 21,
+    UnauthorizedCaller = 401,
+    UnauthorizedCourseAccess = 402,
+    InvalidAdminOperation = 403,
+    EmptyModuleTitle = 404,
+    DuplicateModulePosition = 405,
     EmptyModuleId = 22,
     PrereqNotInList = 23,
+    InvalidInput = 24,
+    AlreadyInitialized = 25,
 }
 
 pub fn handle_error(env: &Env, error: Error) -> ! {
