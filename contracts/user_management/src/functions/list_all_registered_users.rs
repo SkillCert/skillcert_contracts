@@ -508,6 +508,7 @@ mod tests {
             super_admin: Address::generate(&env),
             max_page_size: 100,
             total_user_count: 0,
+            rate_limit_config: crate::functions::utils::rate_limit_utils::get_default_rate_limit_config(),
         };
 
         let pagination = PaginationParams {
@@ -526,6 +527,7 @@ mod tests {
             super_admin: Address::generate(&env),
             max_page_size: 100,
             total_user_count: 0,
+            rate_limit_config: crate::functions::utils::rate_limit_utils::get_default_rate_limit_config(),
         };
 
         let pagination = PaginationParams {
@@ -544,6 +546,7 @@ mod tests {
             super_admin: Address::generate(&env),
             max_page_size: 100,
             total_user_count: 0,
+            rate_limit_config: crate::functions::utils::rate_limit_utils::get_default_rate_limit_config(),
         };
 
         let pagination = PaginationParams {

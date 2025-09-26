@@ -216,6 +216,17 @@ mod tests {
 
         let contract_id = env.register(CourseRegistry, ());
         let client = CourseRegistryClient::new(&env, &contract_id);
+        
+        // Initialize course rate limiting with permissive settings for testing
+        env.as_contract(&contract_id, || {
+            use crate::schema::{DataKey, CourseRateLimitConfig};
+            let permissive_config = CourseRateLimitConfig {
+                window_seconds: 3600,
+                max_courses_per_window: 100,
+            };
+            let config_key = DataKey::CourseRateLimitConfig;
+            env.storage().persistent().set(&config_key, &permissive_config);
+        });
 
         let creator: Address = Address::generate(&env);
         let course1 = client.create_course(
@@ -516,6 +527,17 @@ mod tests {
 
         let contract_id = env.register(CourseRegistry, ());
         let client = CourseRegistryClient::new(&env, &contract_id);
+        
+        // Initialize course rate limiting with permissive settings for testing
+        env.as_contract(&contract_id, || {
+            use crate::schema::{DataKey, CourseRateLimitConfig};
+            let permissive_config = CourseRateLimitConfig {
+                window_seconds: 3600,
+                max_courses_per_window: 100,
+            };
+            let config_key = DataKey::CourseRateLimitConfig;
+            env.storage().persistent().set(&config_key, &permissive_config);
+        });
 
         let creator: Address = Address::generate(&env);
         let course1 = client.create_course(
@@ -597,7 +619,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "HostError: Error(Contract, #32)")]
+    #[should_panic(expected = "HostError: Error(Contract, #34)")]
     fn test_edit_prerequisite_duplicate_validation() {
         let env = Env::default();
         env.mock_all_auths();

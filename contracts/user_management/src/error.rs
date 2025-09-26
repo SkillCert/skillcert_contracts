@@ -32,12 +32,16 @@ pub enum Error {
     PageParamTooLarge = 23,
     InvalidInput = 24,
     PasswordMismatch = 25,
-    PasswordTooShort = 26,
-    PasswordTooLong = 27,
-    PasswordMissingUppercase = 28,
-    PasswordMissingLowercase = 29,
-    PasswordMissingDigit = 30,
-    PasswordMissingSpecialChar = 31,
+    // Rate limiting errors
+    RateLimitExceeded = 26,
+    RateLimitNotConfigured = 27,
+    // Password validation errors
+    PasswordTooShort = 28,
+    PasswordTooLong = 29,
+    PasswordMissingUppercase = 30,
+    PasswordMissingLowercase = 31,
+    PasswordMissingDigit = 32,
+    PasswordMissingSpecialChar = 33,
 }
 
 pub fn handle_error(env: &Env, error: Error) -> ! {
