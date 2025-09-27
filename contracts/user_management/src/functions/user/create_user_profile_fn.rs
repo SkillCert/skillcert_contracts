@@ -80,3 +80,16 @@ pub fn create_user_profile(env: Env, user: Address, profile: UserProfile) -> Use
 
     profile
 }
+
+//============================================================================
+//================================ TESTS =====================================  
+//============================================================================
+
+// TODO : Add unit tests for create_user_profile function
+// Scenarios to cover:
+// 1. Successfully creating a user profile with valid data.
+// 2. Attempting to create a profile with missing mandatory fields (should error).
+// 3. Attempting to create a profile with an already taken email (should error).
+// 4. Attempting to create a profile without authentication (should error).
+// 5. Attempting to create a duplicate profile for the same user (should error).
+// 6. Attempting to create a profile with invalid field lengths (should error).
