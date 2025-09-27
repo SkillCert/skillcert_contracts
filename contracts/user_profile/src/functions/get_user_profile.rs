@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use soroban_sdk::{Address, Env, Symbol};
+use soroban_sdk::{Address, Env, Symbol, symbol_short};
 
 use crate::schema::UserProfile;
+use crate::error::{Error, handle_error};
 
- validate-input-parameter
+const PROFILE_KEY: Symbol = symbol_short!("profile");
+
 pub fn user_profile_get_user_profile(env: &Env, user_address: Address) -> UserProfile {
     // Input validation
     // If Address type supports is_empty or similar, add check. Otherwise, skip.
     // For demonstration, assume Address cannot be empty.
 
-pub fn get_user_profile(env: &Env, user_address: Address) -> UserProfile {
-    // Create the storage key for the user profile
- main
-    let key = Symbol::new(env, "profile");
-
-    // Get the user profile from storage
-    let profile: UserProfile = env
+    // Get the user profile from storage with proper error handling
+    match env
         .storage()
         .instance()
-        .get(&(key, user_address.clone()))
-        .expect("User profile not found");
-
-    profile
+        .get::<(Symbol, Address), UserProfile>(&(PROFILE_KEY, user_address.clone()))
+    {
+        Some(profile) => profile,
+        None => handle_error(env, Error::UserProfileNotFound),
+    }
 }
 
 // Function to get user profile with privacy check
@@ -33,21 +31,13 @@ pub fn get_user_profile_with_privacy(
     user_address: Address,
     requester_address: Address,
 ) -> UserProfile {
-    // Input validation
-    // If Address type supports is_empty or similar, add check. Otherwise, skip.
-    let key = Symbol::new(env, "profile");
-
-    // Get the user profile from storage
-    let mut profile: UserProfile = env
-        .storage()
-        .instance()
-        .get(&(key, user_address.clone()))
-        .expect("User profile not found");
-    // Check privacy settings
-    // If profile is not public and requester is not the profile owner, hide email
+    // Reuse the optimized get_user_profile function
+    let mut profile: UserProfile = user_profile_get_user_profile(env, user_address.clone());
+    
+    // Check privacy settings and apply privacy filters without additional storage reads
     if !profile.privacy_public && requester_address != user_address {
         profile.email = None;
+        // Add more privacy filters as needed
     }
-
     profile
 }

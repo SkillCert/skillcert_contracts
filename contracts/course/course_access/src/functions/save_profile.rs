@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use soroban_sdk::{Address, Env, String, Symbol, symbol_short};
+
 use crate::error::{handle_error, Error};
 use crate::schema::{DataKey, UserProfile};
-use soroban_sdk::{Address, Env, String};
+
+const SAVE_USER_PROFILE_EVENT: Symbol = symbol_short!("saveUsPrl");
 
 /// Save or update a user's profile information on-chain.
 ///
@@ -27,7 +30,7 @@ use soroban_sdk::{Address, Env, String};
 /// - `Error::NameRequired` if name is empty
 /// - `Error::EmailRequired` if email is empty
 /// - `Error::CountryRequired` if country is empty
-pub fn SaveUserProfile(
+pub fn save_user_profile(
     env: Env,
     name: String,
     email: String,
@@ -48,15 +51,18 @@ pub fn SaveUserProfile(
         handle_error(&env, Error::CountryRequired)
     }
 
-    let profile = UserProfile {
-        name,
-        email,
-        profession,
-        goals,
-        country,
+    let profile: UserProfile = UserProfile {
+        name: name.clone(),
+        email: email.clone(),
+        profession: profession.clone(),
+        goals: goals.clone(),
+        country: country.clone(),
     };
 
     env.storage()
         .persistent()
-        .set(&DataKey::UserProfile(user), &profile);
+        .set(&DataKey::UserProfile(user.clone()), &profile);
+
+    env.events()
+        .publish((SAVE_USER_PROFILE_EVENT,), (name, email, profession, goals, country, user));
 }

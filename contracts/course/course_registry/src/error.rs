@@ -35,6 +35,27 @@ pub enum Error {
     DuplicateModulePosition = 405,
     EmptyModuleId = 22,
     PrereqNotInList = 23,
+    InvalidModulePosition = 24,
+    InvalidModuleTitle = 25,
+    InvalidCourseDescription = 26,
+    InvalidCategoryName = 27,
+    EmptyCategory = 28,
+    // Removed InvalidInput - replaced with specific validation errors below
+    InvalidTitleLength = 29,
+    InvalidLanguageLength = 43,
+    InvalidThumbnailUrlLength = 44,
+    InvalidDurationValue = 45,
+    InvalidLimitValue = 46,
+    InvalidOffsetValue = 47,
+    InvalidGoalContent = 48,
+    InvalidPrerequisiteId = 49,
+    EmptyPrerequisiteList = 50,
+    TooManyPrerequisites = 51,
+    EmptyPrerequisiteId = 52,
+    InvalidCourseId = 53,
+    InvalidPrice100 = 54,
+    AlreadyInitialized = 55,
+    DuplicatePrerequisite = 56,
 }
 
 pub fn handle_error(env: &Env, error: Error) -> ! {

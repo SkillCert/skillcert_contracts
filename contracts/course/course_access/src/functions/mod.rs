@@ -2,8 +2,8 @@
 // Copyright (c) 2025 SkillCert
 
 pub mod config;
+pub mod contract_versioning;
 pub mod grant_access;
-pub mod has_access;
 pub mod list_course_access;
 pub mod list_user_courses;
 pub mod revoke_access;
@@ -18,4 +18,3 @@ pub use list_user_courses::*;
 pub use revoke_access::*;
 pub use revoke_all_access::*;
 pub use save_profile::*;
-pub use transfer_course_access::*;

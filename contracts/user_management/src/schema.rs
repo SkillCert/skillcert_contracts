@@ -1,12 +1,20 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use soroban_sdk::{contracttype, Address, String};
+use soroban_sdk::{contracttype, Address, String, Vec};
 
 /// Default and limit constants for user management configuration
 pub const DEFAULT_MAX_PAGE_SIZE: u32 = 100;
 pub const ABSOLUTE_MAX_PAGE_SIZE: u32 = 1000;
-pub const MAX_ADMINS: usize = 10;
+pub const MAX_ADMINS: u32 = 10;
+
+/// Password validation constants
+pub const MIN_PASSWORD_LENGTH: u32 = 8;
+pub const MAX_PASSWORD_LENGTH: u32 = 128;
+pub const REQUIRED_SPECIAL_CHARS: &str = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+pub const REQUIRED_DIGITS: &str = "0123456789";
+pub const REQUIRED_UPPERCASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+pub const REQUIRED_LOWERCASE: &str = "abcdefghijklmnopqrstuvwxyz";
 
 /// User profile information matching UI definition.
 ///
@@ -25,6 +33,25 @@ pub struct UserProfile {
     pub country: Option<String>,
     /// User's learning goals or purpose (optional)
     pub purpose: Option<String>,
+    /// User's profile picture URL (optional)
+    pub profile_picture_url: Option<String>,
+}
+
+/// Struct for profile update parameters
+/// Only includes fields that can be updated
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct ProfileUpdateParams {
+    /// User's full name (optional update)
+    pub full_name: Option<String>,
+    /// User's profession or job title
+    pub profession: Option<String>,
+    /// User's country of residence
+    pub country: Option<String>,
+    /// User's learning goals or purpose
+    pub purpose: Option<String>,
+    /// User's profile picture URL
+    pub profile_picture_url: Option<String>,
 }
 
 /// User roles in the SkillCert platform.
@@ -39,6 +66,83 @@ pub enum UserRole {
     Instructor,
     /// Platform administrator with elevated privileges
     Admin,
+    /// Super administrator with full system access
+    SuperAdmin,
+    /// Content moderator with course content permissions
+    Moderator,
+    /// Support staff with user assistance permissions
+    Support,
+}
+
+/// Granular permissions for RBAC system.
+///
+/// Defines specific actions that can be granted or denied to users.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub enum Permission {
+    // User management permissions
+    /// Can view user profiles
+    ViewUsers,
+    /// Can edit user profiles (own or others)
+    EditUsers,
+    /// Can delete/deactivate users
+    DeleteUsers,
+    /// Can create new user accounts
+    CreateUsers,
+    
+    // Course management permissions
+    /// Can view course details
+    ViewCourses,
+    /// Can create new courses
+    CreateCourses,
+    /// Can edit course content
+    EditCourses,
+    /// Can delete courses
+    DeleteCourses,
+    /// Can manage course access (grant/revoke)
+    ManageCourseAccess,
+    
+    // Administrative permissions
+    /// Can manage system configuration
+    ManageSystem,
+    /// Can manage admin roles
+    ManageAdmins,
+    /// Can view system analytics
+    ViewAnalytics,
+    /// Can moderate content
+    ModerateContent,
+    
+    // Support permissions
+    /// Can provide user support
+    ProvideSupport,
+    /// Can view support tickets
+    ViewSupport,
+}
+
+/// Role-based permissions mapping.
+///
+/// Defines which permissions are granted to each role by default.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct RolePermissions {
+    /// The role this permission set applies to
+    pub role: UserRole,
+    /// List of permissions granted to this role
+    pub permissions: soroban_sdk::Vec<Permission>,
+}
+
+/// User-specific permission overrides.
+///
+/// Allows granting or revoking specific permissions to individual users.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct UserPermissions {
+    /// The user address
+    pub user: Address,
+    /// Additional permissions granted beyond role defaults
+    pub granted_permissions: soroban_sdk::Vec<Permission>,
+    /// Permissions explicitly revoked from role defaults
+    pub revoked_permissions: soroban_sdk::Vec<Permission>,
 }
 
 /// User account status.
@@ -104,6 +208,36 @@ pub struct AdminConfig {
     pub total_user_count: u32,
 }
 
+/// Pagination parameters for cursor-based pagination.
+///
+/// Used to implement efficient pagination that avoids gas limit issues
+/// with large datasets by using cursor-based navigation.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaginationParams {
+    /// Cursor for pagination (address of the last item from previous page)
+    pub cursor: Option<Address>,
+    /// Maximum number of items to return per page
+    pub limit: u32,
+}
+
+/// Pagination result with metadata for efficient navigation.
+///
+/// Contains the paginated data along with pagination metadata
+/// to enable cursor-based navigation.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaginatedLightProfiles {
+    /// The paginated data items
+    pub data: Vec<LightProfile>,
+    /// Cursor for the next page (None if this is the last page)
+    pub next_cursor: Option<Address>,
+    /// Total count of items matching the filter (optional, may be expensive to compute)
+    pub total_count: Option<u32>,
+    /// Whether there are more pages available
+    pub has_more: bool,
+}
+
 /// Storage keys for different data types in the user management contract.
 ///
 /// This enum defines the various keys used to store and retrieve
@@ -123,8 +257,14 @@ pub enum DataKey {
     EmailIndex(String),
     /// Key for storing the list of admin addresses
     Admins,
-    /// Key for storing user role assignments
-    UserRoles,
+    /// Key for storing user role assignments: user_address -> UserRole
+    UserRole(Address),
     /// Key for storing administrative configuration
     AdminConfig,
+    /// Key for storing role-based permissions: role -> RolePermissions
+    RolePermissions(UserRole),
+    /// Key for storing user-specific permission overrides: user_address -> UserPermissions
+    UserPermissions(Address),
+    /// Key for storing default role permissions configuration
+    DefaultRolePermissions,
 }

@@ -30,8 +30,17 @@ pub enum Error {
     UserProfileNotFound = 21,
     InactiveUser = 22,
     PageParamTooLarge = 23,
-    InvalidInput = 24,
+    // Removed InvalidInput - replaced with specific validation errors below
+    InvalidTitleLength = 24,
     PasswordMismatch = 25,
+    PasswordTooShort = 26,
+    PasswordTooLong = 27,
+    PasswordMissingUppercase = 28,
+    PasswordMissingLowercase = 29,
+    PasswordMissingDigit = 30,
+    PasswordMissingSpecialChar = 31,
+    RequiredFieldMissing = 32,
+    Unauthorized = 33
 }
 
 pub fn handle_error(env: &Env, error: Error) -> ! {
