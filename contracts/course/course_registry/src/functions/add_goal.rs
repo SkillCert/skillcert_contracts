@@ -1,28 +1,40 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::functions::utils;
-use crate::schema::{Course, CourseGoal, DataKey};
-use crate::error::{Error, handle_error};
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
 
-const GOAL_ADDED_EVENT: Symbol = symbol_short!("goaladd");
+use crate::error::{handle_error, Error};
+use crate::functions::utils::{self, trim};
+use crate::schema::{Course, CourseGoal, DataKey};
 
-pub fn course_registry_add_goal(
-    env: Env,
-    creator: Address,
-    course_id: String,
-    content: String,
-) -> CourseGoal {
+const COURSE_KEY: Symbol = symbol_short!("course");
+
+const GOAL_ADDED_EVENT: Symbol = symbol_short!("goalAdded");
+
+pub fn add_goal(env: Env, creator: Address, course_id: String, content: String) -> CourseGoal {
     creator.require_auth();
-    // Validate input
-    if content.is_empty() {
-        handle_error(&env, Error::EmptyGoalContent)
-
+    
+    // Validate input parameters
+    if course_id.is_empty() {
+        handle_error(&env, Error::EmptyCourseId);
+    }
+    
+    // Validate goal content - prevent empty or whitespace-only content
+    if content.is_empty() || trim(&env, &content).is_empty() {
+        handle_error(&env, Error::EmptyGoalContent);
+    }
+    
+    // Check string lengths to prevent extremely long values
+    if course_id.len() > 100 {
+        handle_error(&env, Error::InvalidCourseId);
+    }
+    
+    if content.len() > 1000 {
+        handle_error(&env, Error::InvalidGoalContent);
     }
 
     // Load course
-    let storage_key = (symbol_short!("course"), course_id.clone());
+    let storage_key: (Symbol, String) = (COURSE_KEY, course_id.clone());
     let course: Course = env
         .storage()
         .persistent()
@@ -37,8 +49,8 @@ pub fn course_registry_add_goal(
     // Generate a unique goal ID
     let goal_id = utils::generate_unique_id(&env);
 
-     // Create new goal
-    let goal = CourseGoal {
+    // Create new goal
+    let goal: CourseGoal = CourseGoal {
         course_id: course_id.clone(),
         goal_id: goal_id.clone(),
         content: content.clone(),

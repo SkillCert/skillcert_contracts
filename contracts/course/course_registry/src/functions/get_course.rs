@@ -1,24 +1,39 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use soroban_sdk::{Env, String, Symbol};
-use crate::error::{Error, handle_error};
+use soroban_sdk::{Env, String, Symbol, symbol_short};
 
+use crate::error::{handle_error, Error};
 use crate::schema::Course;
 
-pub fn course_registry_get_course(env: &Env, course_id: String) -> Course {
-    // Create the storage key for the course
-    let key = Symbol::new(env, "course");
+const COURSE_KEY: Symbol = symbol_short!("course");
+
+/// Retrieves a course by its ID.
+///
+/// Arguments:
+/// - env: Soroban environment.
+/// - course_id: unique identifier of the course.
+///
+/// Returns:
+/// - Course: the course record associated with the given ID.
+///
+/// Errors:
+/// - Panics with `"Course not found"` if the course does not exist.
+/// - Returns `Error::CourseAlreadyArchived` if the course is archived.
+///
+/// Storage used (replace keys if your schema differs):
+/// - (("course", id),) -> Course    // course record by id
+pub fn get_course(env: &Env, course_id: String) -> Course {
 
     // Get the course from storage
     let course: Course = env
         .storage()
         .persistent()
-        .get(&(key, course_id.clone()))
+        .get(&(COURSE_KEY, course_id.clone()))
         .expect("Course not found");
 
     match course.is_archived {
-        true => handle_error(&env, Error::CourseAlreadyArchived),
+        true => handle_error(env, Error::CourseAlreadyArchived),
         false => course,
     }
 }
@@ -27,13 +42,6 @@ pub fn course_registry_get_course(env: &Env, course_id: String) -> Course {
 mod test {
     use crate::{schema::Course, CourseRegistry, CourseRegistryClient};
     use soroban_sdk::{testutils::Address as _, Address, Env, String};
-
-    fn create_course<'a>(client: &CourseRegistryClient<'a>, creator: &Address) -> Course {
-        let title = String::from_str(&client.env, "title");
-        let description = String::from_str(&client.env, "description");
-        let price = 1000_u128;
-        client.create_course(&creator, &title, &description, &price, &None, &None, &None, &None, &None)
-    }
 
     #[test]
     fn test_get_course_success() {
@@ -68,5 +76,22 @@ mod test {
         let course = create_course(&client, &creator);
         client.archive_course(&creator, &course.id);
         client.get_course(&course.id);
+    }
+
+    fn create_course<'a>(client: &CourseRegistryClient<'a>, creator: &Address) -> Course {
+        let title = String::from_str(&client.env, "title");
+        let description = String::from_str(&client.env, "description");
+        let price = 1000_u128;
+        client.create_course(
+            &creator,
+            &title,
+            &description,
+            &price,
+            &None,
+            &None,
+            &None,
+            &None,
+            &None,
+        )
     }
 }

@@ -2,8 +2,18 @@
 // Copyright (c) 2025 SkillCert
 
 use crate::schema::{AdminConfig, DataKey};
-use crate::error::{Error, handle_error};
-use soroban_sdk::{Address, Env, Vec};
+use soroban_sdk::{Address, Env, Vec, Symbol, symbol_short};
+
+use crate::error::{handle_error, Error};
+use crate::schema::{
+    AdminConfig, DataKey, ABSOLUTE_MAX_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE, MAX_ADMINS,
+};
+use core::iter::Iterator;
+
+const INIT_SYSTEM_EVENT: Symbol = symbol_short!("initSys");
+const ADD_ADMIN_EVENT: Symbol = symbol_short!("addAdmin");
+const REMOVE_ADMIN_EVENT: Symbol = symbol_short!("rmvAdmin");
+
 
 /// Initialize the admin system - can only be called once
 pub fn initialize_system(
@@ -26,19 +36,20 @@ pub fn initialize_system(
     }
 
     // Validate max_page_size
-    let validated_max_page_size = match max_page_size {
+    let validated_max_page_size: u32 = match max_page_size {
         Some(size) => {
-            if size == 0 || size > 1000 {
+            if size == 0 || size > ABSOLUTE_MAX_PAGE_SIZE {
                 handle_error(&env, Error::InvalidMaxPageSize)
             }
             size
         }
-        None => 100, // Default
+        // TODO: Make page size configurable through contract configuration
+        None => DEFAULT_MAX_PAGE_SIZE, // Default
     };
 
-    let config = AdminConfig {
+    let config: AdminConfig = AdminConfig {
         initialized: true,
-        super_admin,
+        super_admin: super_admin.clone(),
         max_page_size: validated_max_page_size,
         total_user_count: 0,
     };
@@ -54,6 +65,9 @@ pub fn initialize_system(
         .persistent()
         .set(&DataKey::Admins, &empty_admins);
 
+    env.events()
+        .publish((INIT_SYSTEM_EVENT, &initializer), (super_admin, validated_max_page_size));
+
     config
 }
 
@@ -61,11 +75,11 @@ pub fn initialize_system(
 pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
     caller.require_auth();
 
-    let config = env
+    let config: AdminConfig = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
-        .unwrap_or_else(||handle_error(&env, Error::SystemNotInitialized));
+        .unwrap_or_else(|| handle_error(&env, Error::SystemNotInitialized));
 
     if !config.initialized {
         handle_error(&env, Error::SystemNotInitialized)
@@ -93,19 +107,22 @@ pub fn add_admin(env: Env, caller: Address, new_admin: Address) {
     }
 
     // Limit number of admins for security
-    if admins.len() >= 10 {
+    if admins.len() >= MAX_ADMINS {
         handle_error(&env, Error::MaxAdminsReached)
     }
 
-    admins.push_back(new_admin);
+    admins.push_back(new_admin.clone());
     env.storage().persistent().set(&DataKey::Admins, &admins);
+
+    env.events()
+        .publish((ADD_ADMIN_EVENT, &caller), (new_admin, admins.len()));
 }
 
 /// Remove an admin (super admin only)
 pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
     caller.require_auth();
 
-    let config = env
+    let config: AdminConfig = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
@@ -122,7 +139,7 @@ pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
 
     // Cannot remove super admin
     if admin_to_remove == config.super_admin {
-         handle_error(&env, Error::CannotRemoveSuperAdmin)
+        handle_error(&env, Error::CannotRemoveSuperAdmin)
     }
 
     let admins: Vec<Address> = env
@@ -132,8 +149,8 @@ pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
         .unwrap_or_else(|| Vec::new(&env));
 
     // Find and remove the admin
-    let initial_len = admins.len();
-    let mut new_admins = Vec::new(&env);
+    let initial_len: u32 = admins.len();
+    let mut new_admins: Vec<Address> = Vec::new(&env);
 
     for admin in admins.iter() {
         if admin != admin_to_remove {
@@ -148,13 +165,16 @@ pub fn remove_admin(env: Env, caller: Address, admin_to_remove: Address) {
     env.storage()
         .persistent()
         .set(&DataKey::Admins, &new_admins);
+
+    env.events()
+        .publish((REMOVE_ADMIN_EVENT, &caller), (admin_to_remove, new_admins.len()));
 }
 
 /// Get list of all admins (admin only)
 pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
     caller.require_auth();
 
-    let config = env
+    let config: AdminConfig = env
         .storage()
         .persistent()
         .get::<DataKey, AdminConfig>(&DataKey::AdminConfig)
@@ -165,7 +185,7 @@ pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
     }
 
     // Check if caller is an admin (including super admin)
-    let is_super_admin = caller == config.super_admin;
+    let is_super_admin: bool = caller == config.super_admin;
     let regular_admins: Vec<Address> = env
         .storage()
         .persistent()
@@ -178,7 +198,7 @@ pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
     }
 
     // Return all admins including super admin
-    let mut all_admins = Vec::new(&env);
+    let mut all_admins: Vec<Address> = Vec::new(&env);
     all_admins.push_back(config.super_admin);
 
     for admin in regular_admins.iter() {
@@ -189,7 +209,7 @@ pub fn get_admins(env: Env, caller: Address) -> Vec<Address> {
 }
 
 /// Check if system is initialized
-pub fn is_initialized(env: Env) -> bool {
+pub fn is_system_initialized(env: Env) -> bool {
     if let Some(config) = env
         .storage()
         .persistent()
@@ -203,9 +223,8 @@ pub fn is_initialized(env: Env) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{UserManagement, UserManagementClient};
-    use soroban_sdk::{testutils::Address as _, Env};
+    use soroban_sdk::{testutils::Address as _, Address, Env};
 
     #[test]
     fn test_initialize_system() {
@@ -217,11 +236,13 @@ mod tests {
         let initializer = Address::generate(&env);
         let super_admin = Address::generate(&env);
 
-        let config = client.initialize_system(&initializer, &super_admin, &Some(50));
+        const TEST_MAX_PAGE_SIZE: u32 = 50;
+        let config =
+            client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
 
         assert!(config.initialized);
         assert_eq!(config.super_admin, super_admin);
-        assert_eq!(config.max_page_size, 50);
+        assert_eq!(config.max_page_size, TEST_MAX_PAGE_SIZE);
         assert_eq!(config.total_user_count, 0);
 
         assert!(client.is_system_initialized());
@@ -238,8 +259,9 @@ mod tests {
         let initializer = Address::generate(&env);
         let super_admin = Address::generate(&env);
 
-        client.initialize_system(&initializer, &super_admin, &Some(50));
-        client.initialize_system(&initializer, &super_admin, &Some(50));
+        const TEST_MAX_PAGE_SIZE: u32 = 50;
+        client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
+        client.initialize_system(&initializer, &super_admin, &Some(TEST_MAX_PAGE_SIZE));
     }
 
     #[test]

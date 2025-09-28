@@ -1,31 +1,39 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::schema::{Course, CourseGoal, DataKey};
-use crate::error::{Error, handle_error};
-use super::is_course_creator::is_course_creator;
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
-// use soroban_sdk::testutils::Logs;
 
-const GOAL_EDITED_EVENT: Symbol = symbol_short!("goaledit");
+use super::is_course_creator::is_course_creator;
+use crate::error::{handle_error, Error};
+use crate::functions::utils::trim;
+use crate::schema::{Course, CourseGoal, DataKey};
 
-pub fn course_registry_edit_goal(
+const COURSE_KEY: Symbol = symbol_short!("course");
+
+const GOAL_EDITED_EVENT: Symbol = symbol_short!("goalEdit");
+
+pub fn edit_goal(
     env: Env,
     creator: Address,
     course_id: String,
     goal_id: String,
     new_content: String,
 ) -> CourseGoal {
-    
-
     creator.require_auth();
     // Validate input
-    if new_content.is_empty() {
-        handle_error(&env, Error::EmptyNewGoalContent)
+    if course_id.is_empty() {
+        handle_error(&env, Error::EmptyCourseId)
+    }
+    if goal_id.is_empty() {
+        handle_error(&env, Error::EmptyGoalId)
+    }
+    // Validate goal content - prevent empty or whitespace-only content
+    if new_content.is_empty() || trim(&env, &new_content).is_empty() {
+        handle_error(&env, Error::EmptyNewGoalContent);
     }
 
     // Load course
-    let storage_key = (symbol_short!("course"), course_id.clone());
+    let storage_key: (Symbol, String) = (COURSE_KEY, course_id.clone());
     let course: Course = env
         .storage()
         .persistent()
@@ -37,7 +45,7 @@ pub fn course_registry_edit_goal(
         handle_error(&env, Error::Unauthorized)
     }
 
-    let goal_key = DataKey::CourseGoal(course_id.clone(), goal_id.clone());
+    let goal_key: DataKey = DataKey::CourseGoal(course_id.clone(), goal_id.clone());
     let mut goal: CourseGoal = env
         .storage()
         .persistent()
@@ -59,15 +67,17 @@ pub fn course_registry_edit_goal(
     goal
 }
 
-
 #[cfg(test)]
 mod test {
     use crate::schema::Course;
     use crate::{CourseRegistry, CourseRegistryClient};
     use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-    fn setup_course_and_goal(env: &Env, client: &CourseRegistryClient, creator: &Address) -> (Course, String) {
-
+    fn setup_course_and_goal(
+        env: &Env,
+        client: &CourseRegistryClient,
+        creator: &Address,
+    ) -> (Course, String) {
         let course: Course = client.create_course(
             creator,
             &String::from_str(env, "Test Course"),
@@ -115,7 +125,6 @@ mod test {
         assert_eq!(edited_goal.course_id, course.id);
         assert_eq!(edited_goal.created_by, creator);
     }
-
 
     #[test]
     #[should_panic(expected = "HostError: Error(Contract, #6)")]
@@ -189,5 +198,4 @@ mod test {
             &String::from_str(&env, "Some content"),
         );
     }
-
 }

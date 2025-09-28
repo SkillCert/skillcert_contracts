@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
-use crate::schema::Course;
-use soroban_sdk::{symbol_short, Address, Env, Symbol, Vec};
 use super::utils::u32_to_string;
+use crate::schema::Course;
+use soroban_sdk::{symbol_short, Address, Env, Symbol, Vec, String};
 
 const COURSE_KEY: Symbol = symbol_short!("course");
 
-pub fn course_registry_get_courses_by_instructor(env: &Env, instructor: Address) -> Vec<Course> {
+pub fn get_courses_by_instructor(env: &Env, instructor: Address) -> Vec<Course> {
     let mut results: Vec<Course> = Vec::new(env);
     let mut id: u128 = 1;
 
     loop {
-        let course_id = u32_to_string(env, id as u32);
-        let key = (COURSE_KEY, course_id.clone());
+        let course_id: String = u32_to_string(env, id as u32);
+        let key: (Symbol, String) = (COURSE_KEY, course_id.clone());
 
         if !env.storage().persistent().has(&key) {
             break;
@@ -26,7 +26,7 @@ pub fn course_registry_get_courses_by_instructor(env: &Env, instructor: Address)
         }
 
         id += 1;
-        if id > 1000 {
+        if id > crate::schema::MAX_LOOP_GUARD as u128 {
             break; // safety limit
         }
     }
@@ -48,7 +48,17 @@ mod test {
         let title = String::from_str(&client.env, title);
         let description = String::from_str(&client.env, "description");
         let price = 1000_u128;
-        client.create_course(&creator, &title, &description, &price, &None, &None, &None, &None, &None)
+        client.create_course(
+            &creator,
+            &title,
+            &description,
+            &price,
+            &None,
+            &None,
+            &None,
+            &None,
+            &None,
+        )
     }
 
     #[test]
