@@ -5,6 +5,8 @@ use soroban_sdk::{Address, Env};
 
 use crate::error::{handle_error, Error};
 use crate::schema::{DataKey, UserProfile};
+use crate::error::{Error, handle_error};
+use soroban_sdk::{symbol_short, Address, Env, Symbol};
 use core::iter::Iterator;
 
 /// Get User by ID

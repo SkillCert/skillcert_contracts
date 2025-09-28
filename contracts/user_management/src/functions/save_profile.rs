@@ -1,6 +1,31 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use crate::schema::{DataKey, LightProfile, UserProfile, UserRole, UserStatus};
+use crate::error::{Error, handle_error};
+use soroban_sdk::{Address, Env, String, Vec};
+
+/// Security constants for profile validation
+const MAX_NAME_LENGTH: usize = 100;
+const MAX_EMAIL_LENGTH: usize = 320; // RFC 5321 standard
+const MAX_SPECIALIZATION_LENGTH: usize = 100;
+const MAX_LANGUAGE_LENGTH: usize = 50;
+const MAX_CATEGORY_LENGTH: usize = 100;
+const MAX_PASSWORD_LENGTH: usize = 128;
+const MIN_PASSWORD_LENGTH: usize = 8;
+
+/// Validates string content for security
+fn validate_string_content(_env: &Env, s: &String, max_len: usize) -> bool {
+    if s.len() > max_len as u32 {
+        return false;
+    }
+
+    // For no_std environment, we'll do basic length validation
+    // More sophisticated pattern matching can be added if needed
+    true
+}
+
+pub fn user_management_save_profile(
 use crate::error::{handle_error, Error};
 use crate::schema::{
     UserProfile,

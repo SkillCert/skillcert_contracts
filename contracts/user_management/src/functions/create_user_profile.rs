@@ -3,6 +3,7 @@
 
 use crate::error::{handle_error, Error};
 use crate::schema::{DataKey, LightProfile, UserProfile, UserRole, UserStatus};
+use crate::error::{Error, handle_error};
 use core::iter::Iterator;
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
 

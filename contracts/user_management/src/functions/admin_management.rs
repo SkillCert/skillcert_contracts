@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 SkillCert
 
+use crate::schema::{AdminConfig, DataKey};
 use soroban_sdk::{Address, Env, Vec, Symbol, symbol_short};
 
 use crate::error::{handle_error, Error};
@@ -12,6 +13,7 @@ use core::iter::Iterator;
 const INIT_SYSTEM_EVENT: Symbol = symbol_short!("initSys");
 const ADD_ADMIN_EVENT: Symbol = symbol_short!("addAdmin");
 const REMOVE_ADMIN_EVENT: Symbol = symbol_short!("rmvAdmin");
+
 
 /// Initialize the admin system - can only be called once
 pub fn initialize_system(
