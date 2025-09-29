@@ -122,6 +122,7 @@ contracts/shared/
 3. **Update Cargo.toml dependencies** in each contract:
    ```toml
    [dependencies]
+   [dependencies]
    skillcert_shared = { path = "../shared" }
    ```
 
