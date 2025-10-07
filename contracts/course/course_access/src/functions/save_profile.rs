@@ -9,6 +9,25 @@ use crate::schema::{DataKey, UserProfile};
 const SAVE_USER_PROFILE_EVENT: Symbol = symbol_short!("saveUsPrl");
 
 
+/// Description: Saves or updates a user's profile information in persistent storage.
+///
+/// # Arguments
+///
+/// * `env` - The Soroban environment instance.
+/// * `name` - The user's full name (required).
+/// * `email` - The user's email address (required).
+/// * `profession` - Optional profession or occupation of the user.
+/// * `goals` - Optional learning or career goals of the user.
+/// * `country` - The user's country of residence (required).
+/// * `user` - The blockchain address of the user.
+///
+/// # Returns
+///
+/// * Result<(), Error> - Implicit return type where:
+///   - Ok(()) - Profile was successfully saved
+///   - Err(Error::NameRequired) - If name is empty
+///   - Err(Error::EmailRequired) - If email is empty
+///   - Err(Error::CountryRequired) - If country is empty
 pub fn save_user_profile(
     env: Env,
     name: String,
