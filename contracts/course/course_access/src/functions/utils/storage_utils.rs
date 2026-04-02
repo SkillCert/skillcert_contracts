@@ -9,7 +9,16 @@ use crate::functions::config::{TTL_BUMP, TTL_TTL};
 
 const TEMP_TTL: u32 = 900; // 15 minutes
 
-
+/// Brief description: Retrieves or creates the user's courses.
+///
+/// # Arguments
+///
+/// * `env` - The environment context.
+/// * `user` - The address of the user.
+///
+/// # Returns
+///
+/// * `UserCourses` - The user's courses, either retrieved from cache or created.
 pub fn get_or_create_user_courses(
     env: &Env,
     user: &Address,
@@ -37,7 +46,16 @@ pub fn get_or_create_user_courses(
     user_courses
 }
 
-
+/// Brief description: Retrieves or creates the list of users for a given course.
+///
+/// # Arguments
+///
+/// * `env` - The environment context.
+/// * `course_id` - The ID of the course.
+///
+/// # Returns
+///
+/// * `CourseUsers` - The users enrolled in the course, either retrieved from cache or created.
 pub fn get_or_create_course_users(
     env: &Env,
     course_id: &String,
@@ -65,7 +83,18 @@ pub fn get_or_create_course_users(
     course_users
 }
 
-
+/// Brief description: Updates access mappings for a user in a course.
+///
+/// # Arguments
+///
+/// * `env` - The environment context.
+/// * `course_id` - The ID of the course.
+/// * `user` - The address of the user.
+/// * `add` - A boolean flag indicating whether to grant (true) or revoke (false) access.
+///
+/// # Returns
+///
+/// * `()` - This function does not return a value.
 pub fn update_access_mappings(
     env: &Env,
     course_id: &String,
@@ -105,7 +134,17 @@ pub fn update_access_mappings(
     env.storage().temporary().set(&temp_course_key, &course_users);
 }
 
-
+/// Brief description: Checks if a user has access to a course.
+///
+/// # Arguments
+///
+/// * `env` - The environment context.
+/// * `course_id` - The ID of the course.
+/// * `user` - The address of the user.
+///
+/// # Returns
+///
+/// * `bool` - True if the user has access to the course, otherwise false.
 pub fn has_course_access(
     env: &Env,
     course_id: &String,
@@ -134,7 +173,16 @@ pub fn has_course_access(
     has_access
 }
 
-
+/// Brief description: Invalidates the cache for a specific course's users.
+///
+/// # Arguments
+///
+/// * `env` - The environment context.
+/// * `course_id` - The ID of the course.
+///
+/// # Returns
+///
+/// * `()` - This function does not return a value.
 pub fn invalidate_course_access_cache(
     env: &Env,
     course_id: &String,
